@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify
-import json
 import numpy as np
 import xgboost as xgb
+from snn import snn_model, predict_snn
+
 
 app = Flask(__name__)
 
@@ -10,80 +11,53 @@ model = xgb.XGBRegressor()
 model.load_model('xgb_model.json')
 
 #update when input is available
-def predict(data):
+def predict_xgb(data):
     try:
-        redict(features)
         # Return prediction# Reshape features for the model
         features = np.array(data['features']).reshape(1, -1)
         # Make prediction
-        prediction = model.p
+        prediction = model.predict(features)
         return prediction.tolist()
     except Exception as e:
         return str(e)
 
 
-
 @app.route('/')
 def home():
-    return "XGBoost Model Inference API"
+    return "Model Inference API: /predict_xgb for XGBoost and /predict_snn for SNN"
 
 
-@app.route('/predict', methods=['POST'])
-def predict_endpoint():
+@app.route('/predict_xgb', methods=['POST'])
+def predict_xgb_endpoint():
     try:
         # Get JSON data from request
         data = request.get_json(force=True)
-        # Extract features
-        features = data['features']
         # Perform prediction
-        prediction = predict(features)
+        prediction = predict_xgb(data)
         # Return prediction as JSON
-        return jsonify({'prediction': prediction})
+        return jsonify({'prediction': prediction})  # can change to just a single float value
+    
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+@app.route('/predict_snn', methods=['POST'])
+def predict_snn_endpoint():
+    try:
+        # Get JSON data from request
+        data = request.get_json(force=True)
+        
+        # Get the image part from the JSON
+        # image_link = data.get('image_link')  # Assuming the key is 'image_link'
+        
+        # Perform prediction using SNN model from snn.py
+        prediction = predict_snn(data)  # Pass only the image link for prediction
+
+
+        # Return prediction as JSON
+        return jsonify({'prediction': prediction})  # or just a float value
     
-    
-
-
-# @app.route('/load_model', methods=['GET'])
-# @app.route('/load_model')
-
-# # Load the XGBoost model from JSON file
-# def load_model(model_path):
-#     with open(model_path, 'r') as f:
-#         model_json = json.load(f)
-#     model = xgb.Booster(model_file=None)
-#     model.load_model(model_json)
-#     return model
-
-# model = load_model('xgb_model.json')
-
-    
-# @app.route('/predict', methods=['POST'])
-# def predict_endpoint():
-#     # Get input data from request
-#     input_data = request.json
-#     # Make predictions
-#     predictions = predict(input_data)
-#     # Return the predictions as JSON response
-#     return jsonify(predictions.tolist())
-
-# # Preprocess input data
-# def preprocess_data(data):
-#     # Your preprocessing steps here
-#     # Ensure the input data is in the right format
-#     return data
-
-# # Make predictions
-# def predict(data):
-#     # Preprocess the data
-#     preprocessed_data = preprocess_data(data)
-#     # Convert the preprocessed data into DMatrix format
-#     dmatrix = xgb.DMatrix(np.array(preprocessed_data))
-#     # Use the loaded model to make predictions
-#     predictions = model.predict(dmatrix)
-#     return predictions
-
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
