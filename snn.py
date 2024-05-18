@@ -12,8 +12,6 @@ from io import BytesIO
 from geopy.distance import geodesic
 import heapq 
 
-# need to pip install tensorflow, geopy, and scikit.learn
-
 snn = Flask(__name__)
 output_folder = 'predictionImages'
 
@@ -25,6 +23,7 @@ def load_snn_model():
     # snn_model = model_from_json(snn_model_json, custom_objects={'safe_mode': False})
     
     snn_model.load_weights('new_snn_model_weights.h5')
+    
     return snn_model
 
 # def load_snn_model():
@@ -50,8 +49,11 @@ def load_snn_model():
 
 snn_model = load_snn_model()
 
+if(snn_model is not None):
+    print("LOADED MODEL")
 
 def predict_snn(data):
+    print("TEST2")
     try:
         coordinates = data.get('coordinates')
         compare_coordinates_of_other_images(coordinates)

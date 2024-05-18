@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import numpy as np
 import xgboost as xgb
+import json
 from snn import snn_model, predict_snn
 
 
@@ -42,22 +43,42 @@ def predict_xgb_endpoint():
 
 @app.route('/predict_snn', methods=['POST'])
 def predict_snn_endpoint():
-    try:
-        # Get JSON data from request
-        data = request.get_json(force=True)
-        
-        # Get the image part from the JSON
-        # image_link = data.get('image_link')  # Assuming the key is 'image_link'
-        
-        # Perform prediction using SNN model from snn.py
-        prediction = predict_snn(data)  # Pass only the image link for prediction
-
-
-        # Return prediction as JSON
-        return jsonify({'prediction': prediction})  # or just a float value
     
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    print("TEST")
+
+    # expect point data
+    
+    if 'coords' not in request.form:
+        return "NO COORDS", 400
+
+    if 'image' not in request.files:
+        return "No image file provided", 400
+    
+    image_file = request.files['image']
+    
+    coord_data = request.form['coords']
+    
+    print("COORDS",coord_data)
+    
+    # Load coordinates JSON data
+    try:
+        coords_dict = json.loads(coord_data)
+    except json.JSONDecodeError:
+        return "Invalid coordinates JSON data", 400
+
+    # Extract latitude and longitude values
+    lat = coords_dict.get('lat')
+    lng = coords_dict.get('lng')
+    
+    print("LATLONG", lat,lng)
+    
+    # Check if the file is actually an image
+    if image_file.filename == '':
+        return "No image selected", 400
+    
+    print("Image received and processed successfully")
+    
+    return "INPUT RECEIVED"
 
 if __name__ == '__main__':
     app.run(debug=True)

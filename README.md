@@ -7,6 +7,6 @@ pip install -r requirements.txt
 
 Run the server
 ```
-flask --app app run
+flask --app app run --debug
 ```
 
