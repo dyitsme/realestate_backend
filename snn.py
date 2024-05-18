@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
-from keras.models import model_from_json
+import tensorflow as tf
+from tensorflow.keras.models import model_from_json
+# from tensorflow.keras.utils import get_custom_objects
 import numpy as np
 import shutil
 import json
@@ -16,12 +18,35 @@ snn = Flask(__name__)
 output_folder = 'predictionImages'
 
 def load_snn_model():
-    with open('snn_model.json', 'r') as json_file:
+    with open('new_snn_model.json', 'r') as json_file:
         snn_model_json = json_file.read()
+        
     snn_model = model_from_json(snn_model_json)
-    snn_model.load_weights('snn_model_weights.h5')
+    # snn_model = model_from_json(snn_model_json, custom_objects={'safe_mode': False})
+    
+    snn_model.load_weights('new_snn_model_weights.h5')
     return snn_model
 
+# def load_snn_model():
+#     # Load the model architecture
+#     with open('snn_model.json', 'r') as json_file:
+#         snn_model_json = json_file.read()
+    
+#     custom_objects = {'Functional': tf.keras.models.Model}
+
+#     snn_model = model_from_json(snn_model_json, custom_objects=custom_objects)
+    
+#     # Recreate the model from JSON
+#     # snn_model = model_from_json(snn_model_json)
+    
+#     # Load weights into the model
+#     snn_model.load_weights('snn_model_weights.h5')
+    
+#     # Compile the model
+#     snn_model.compile(loss=tf.keras.losses.BinaryCrossentropy(), 
+#                       optimizer=tf.keras.optimizers.Adam(), 
+#                       metrics=['accuracy'])
+#     return snn_model
 
 snn_model = load_snn_model()
 
@@ -142,7 +167,7 @@ def compare_coordinates_of_other_images(coordinates):
         
         
         # Iterate over all JSON files in the MapilJSON folder
-        for filename in os.listdir('MapilJSON'):
+        for filename in os.listdir('Mapil_Images'):
             if filename.endswith('.json'):
                 filepath = os.path.join('MapilJSON', filename)
                 with open(filepath, 'r') as file:
