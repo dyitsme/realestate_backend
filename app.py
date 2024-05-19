@@ -2,7 +2,10 @@ from flask import Flask, request, jsonify
 import numpy as np
 import xgboost as xgb
 import json
+import os
 from snn import snn_model, predict_snn
+
+from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
@@ -77,6 +80,9 @@ def predict_snn_endpoint():
         return "No image selected", 400
     
     print("Image received and processed successfully")
+    
+    
+    predict_snn(image_file, lat, lng)
     
     return "INPUT RECEIVED"
 

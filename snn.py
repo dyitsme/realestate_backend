@@ -52,11 +52,11 @@ snn_model = load_snn_model()
 if(snn_model is not None):
     print("LOADED MODEL")
 
-def predict_snn(data):
-    print("TEST2")
+def predict_snn(image, lat, long):
+    print("START PREDICT PROCEDURE", lat, long)
+
     try:
-        coordinates = data.get('coordinates')
-        compare_coordinates_of_other_images(coordinates)
+        compare_coordinates_of_other_images(image, lat, long)
         
         # continue the calculation here 
         # output_folder = 'predictionImages'
@@ -154,7 +154,7 @@ def compare_images_in_folder(folder):
         return str(e)
     
     
-def compare_coordinates_of_other_images(coordinates):
+def compare_coordinates_of_other_images(image, lat, long):
     try:
         
         # output_folder = 'predictionImages'
