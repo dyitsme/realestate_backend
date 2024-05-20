@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 # Load the model
 model = xgb.XGBRegressor()
-model.load_model('xgb_model.json')
+model.load_model('xgb_model_gavin_best.json')
 
 #update when input is available
 def predict_xgb(data):
