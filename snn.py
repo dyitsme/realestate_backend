@@ -17,6 +17,7 @@ import time
 snn = Flask(__name__)
 output_JSON_folder = 'JSON_Images'
 output_folder = 'predictionImages'
+input_folder = 'inputImage'
 
 def load_snn_model():
     with open('new_snn_model.json', 'r') as json_file:
@@ -38,27 +39,70 @@ def predict_snn(lat, long):
     print("START PREDICT PROCEDURE", lat, long)
 
     try:
+        counter, score = get_images_in_range(lat, long)
+        print("result", counter, score)
+        
+        
+
         # gather_distanced_images(lat, long)
-        
         # image_from_JSON()
-        
         # RUN THIS ONLY IF "Scored_Images" folder is empty
         # image_from_CSV()
         
-        compare_images_in_folder()
-
-        return "GOOD"
+        input_scores = compare_images_in_folder()
+        
+        
+        finalSafetySum = score
+        for score in input_scores:
+            finalSafetySum += score 
+        
+        finalSafetyAve = finalSafetySum / (counter + len(input_scores))
+        
+        print("final count: ", counter + len(input_scores))
+        print("FINAL SUM: ", finalSafetySum)
+        print("FINAL SCORE: ", finalSafetyAve)
+        
+        return finalSafetyAve
     except Exception as e:
         return str(e)
 
 
-# def empty_folder(folder_path):
-#     for filename in os.listdir(folder_path):
-#         file_path = os.path.join(folder_path, filename)
-#         if os.path.isfile(file_path):
-#             os.unlink(file_path)
-#         elif os.path.isdir(file_path):
-#             shutil.rmtree(file_path)
+def get_images_in_range(lat, long):
+    counter = 0
+    saved = 0
+    
+    score = 0
+    
+    # Load CSV file
+    csv_file_path = 'calculated_scores_final.csv'
+    data = pd.read_csv(csv_file_path)
+
+    # Create the directory if it does not exist
+    if not os.path.exists('predictionImages'):
+        os.makedirs('predictionImages')
+
+    for index, row in data.iterrows():
+        # print("progress:", counter)
+        coords = tuple(map(float, row['coordinates'].split(',')))
+        coords = (coords[1],coords[0])
+        
+        distance = geodesic((lat, long), coords).meters
+        
+        counter+=1
+        if distance <= 1000:
+            # print("UNDER 1000")
+            image_url = row['imageUrl']
+            image_path = os.path.join("predictionImages", f'image_{saved}.jpg')
+            saved+=1
+            
+            score += row["calculatedScores"]
+            
+            download_image(image_url, image_path)
+            # print("SAVED UNDER 1000")
+
+    print("finished", counter)
+
+    return saved, score
         
 def image_from_CSV():
     df = pd.read_csv('calculated_scores.csv')
@@ -125,97 +169,133 @@ def image_from_JSON():
 
            
 def compare_images_in_folder():
-    print("START")
-    try:
-        
-        
+    input_folder = 'inputImage'
+    scored_folder = 'Scored_Images'
+    
+    csv_file_path = 'calculated_scores_final.csv'
+    data = pd.read_csv(csv_file_path)
+    
+    test_COUNTER = 0
+    results = []
 
-        finalScores = 0
-        counter = 0
+    for input_image in os.listdir(input_folder):
+        input_image_path = os.path.join(input_folder, input_image)
+        scores = []
         
-        # images = []
-        for filename in os.listdir(output_folder):
-            if filename.endswith('.geojson'):
+        img1 = Image.open(input_image_path).convert('RGB')
+        img1 = img1.resize((128, 128))
+        image_array = np.array(img1)
         
-                print("READ GEOJSON ", filename)
-                filepath = os.path.join(output_folder, filename)
-                with open(filepath, 'r') as file:
-                    # lines = file.readlines()
-                    content = file.read()
-                    
-                    # for line in lines:
-                    try:
-                        json_data = json.loads(content)
-                        print("readDATA", json_data)
-                    except json.JSONDecodeError as e:
-                        print(f"Error reading JSON line in {filename}: {e}")
-                        continue
-                
-                    feature = json_data.get('features', [])[0]
-                    if feature:
-                        properties = feature.get('properties',{})
-                        image_url = properties.get('thumb_2048_url')
-                                            
-                        if image_url:
-                            print("URL:", image_url)
-                            image = download_image(image_url)
-                            if image:
+        for index, scored_image in enumerate(os.listdir(scored_folder)):
+            scored_image_path = os.path.join(scored_folder, scored_image)
+            
+            img2 = Image.open(scored_image_path).convert('RGB')
+            img2 = img2.resize((128, 128))
+            csv_image_array = np.array(img2)
+            
+            print("TEST",test_COUNTER) 
+            similarity_score = snn_model.predict([np.expand_dims(image_array, axis=0), np.expand_dims(csv_image_array, axis=0)])
+            test_COUNTER+=1
+        
+        
+            if len(scores) < 5:
+                heapq.heappush(scores, (similarity_score, index))
+            else:
+                heapq.heappushpop(scores, (similarity_score, index))
+        
+        safetyScoreAve = 0 
+        for score, index in scores:
+            print("SIMI", score)
+            
+            safe = data.loc[index, 'calculatedScores']
+            
+            print("SAFETY", safe)
+            
+            safetyScoreAve += data.loc[index, 'calculatedScores']
+        
+        safetyScoreAve/=5
+        
+        print("New", safetyScoreAve)    
+        
+        results.append(safetyScoreAve)
+        
+           
+    return results 
+            
+    
+    
+    # print("START")
+    # try:
+    #     finalScores = 0
+    #     counter = 0
+        
+    #     # images = []
+    #     for filename in os.listdir(input_folder):  
+    #         feature = json_data.get('features', [])[0]
+    #         if feature:
+    #             properties = feature.get('properties',{})
+    #             image_url = properties.get('thumb_2048_url')
+                                    
+    #             if image_url:
+    #                 print("URL:", image_url)
+    #                 image = download_image(image_url)
+    #                 if image:
+                        
+    #                     print("GOT IMAGE")
+                        
+    #                     top_scores = []
+                        
+    #                     image = image.resize((128, 128))
+    #                     print("RESIZED")
+                        
+    #                     # image_array = preprocess_image(image)
+    #                     for image_index, csv_image_url in enumerate(csv_image_urls):
+    #                         csv_image = download_image(csv_image_url)
+    #                         print("csvURL ",csv_image_url)
+    #                         if csv_image:
+    #                             print("GOT CSV IMAGE")
                                 
-                                print("GOT IMAGE")
+    #                             # csv_image_array = preprocess_image(csv_image)
+    #                             csv_image = csv_image.resize((128, 128))
+    #                             print("CSV_RESIZED")
                                 
-                                top_scores = []
-                                
-                                image = image.resize((128, 128))
-                                print("RESIZED")
-                                
-                                # image_array = preprocess_image(image)
-                                for image_index, csv_image_url in enumerate(csv_image_urls):
-                                    csv_image = download_image(csv_image_url)
-                                    print("csvURL ",csv_image_url)
-                                    if csv_image:
-                                        print("GOT CSV IMAGE")
-                                        
-                                        # csv_image_array = preprocess_image(csv_image)
-                                        csv_image = csv_image.resize((128, 128))
-                                        print("CSV_RESIZED")
-                                        
-                                        image_array = np.array(image)
-                                        csv_image_array = np.array(csv_image)
+    #                             image_array = np.array(image)
+    #                             csv_image_array = np.array(csv_image)
 
 
-                                        # similarity_score = snn_model.predict([image_array, csv_image_array])
-                                        similarity_score = snn_model.predict([np.expand_dims(image_array, axis=0), np.expand_dims(csv_image_array, axis=0)])
-                                        
-                                        print("TEST_URL:", image_url)
-                                        print("TEST_csvURL ",csv_image_url)
-                                        print("SCORE", similarity_score)
-                                        print("")
-                                        
-                                        # print(f"Comparison score between {image_url} and {csv_image_url}: {similarity_score}")
-                                        
-                                        if len(top_scores) < 5:
-                                            heapq.heappush(top_scores, (similarity_score, image_index))
-                                        else:
-                                            heapq.heappushpop(top_scores, (similarity_score, image_index))
-                                            
+    #                             # similarity_score = snn_model.predict([image_array, csv_image_array])
+    #                             similarity_score = snn_model.predict([np.expand_dims(image_array, axis=0), np.expand_dims(csv_image_array, axis=0)])
                                 
-                                print("START AVERAGING")        
-                                safetyScoreAve = 0 
-                                for simi_score, index in top_scores:
-                                    safetyScoreAve += df.loc[index, 'calculatedScores']
+    #                             print("TEST_URL:", image_url)
+    #                             print("TEST_csvURL ",csv_image_url)
+    #                             print("SCORE", similarity_score)
+    #                             print("")
                                 
-                                safetyScoreAve /= 5
-                                print("safetyScoreAve = ", safetyScoreAve)
-                                finalScores += safetyScoreAve
-                                counter+=1
-                                print("next IMAGE")
+    #                             # print(f"Comparison score between {image_url} and {csv_image_url}: {similarity_score}")
+                                
+    #                             if len(top_scores) < 5:
+    #                                 heapq.heappush(top_scores, (similarity_score, image_index))
+    #                             else:
+    #                                 heapq.heappushpop(top_scores, (similarity_score, image_index))
+                                    
+                        
+    #                     print("START AVERAGING")        
+    #                     safetyScoreAve = 0 
+    #                     for simi_score, index in top_scores:
+    #                         safetyScoreAve += df.loc[index, 'calculatedScores']
+                        
+    #                     safetyScoreAve /= 5
+    #                     print("safetyScoreAve = ", safetyScoreAve)
+    #                     finalScores += safetyScoreAve
+    #                     counter+=1
+    #                     print("next IMAGE")
 
-        finalScoresAve = finalScores / counter
-        print("FINISHED SAFETY SCORE CALC")
+    #     finalScoresAve = finalScores / counter
+    #     print("FINISHED SAFETY SCORE CALC")
         
-        return finalScoresAve
-    except Exception as e:
-        return str(e)
+    #     return finalScoresAve
+    # except Exception as e:
+    #     return str(e)
     
     
 # def gather_distanced_images(lat, long):

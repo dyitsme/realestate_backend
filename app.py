@@ -47,27 +47,42 @@ def predict_xgb_endpoint():
 @app.route('/predict_snn', methods=['POST'])
 def predict_snn_endpoint():
     
-    # folder_path = 'predictionImages'
-    # for filename in os.listdir(folder_path):
-    #     file_path = os.path.join(folder_path, filename)
-    #     try:
-    #         if os.path.isfile(file_path) or os.path.islink(file_path):
-    #             os.unlink(file_path)
-    #         elif os.path.isdir(file_path):
-    #             shutil.rmtree(file_path)
-    #     except Exception as e:
-    #         print("Failed to delete")
+    folder_path = 'predictionImages'
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print("Failed to delete")
 
-    # print("Folder emptied successfully")
+    print("Folder emptied successfully")
+    
+    # ---------------------------------------------------------------------------------------------------------
+    
+    folder_path = 'inputImage'
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print("Failed to delete")
+
+    print("Folder emptied successfully")
 
     
-    # if 'coords' not in request.form:
-    #     return "NO COORDS", 400
+    if 'coords' not in request.form:
+        return "NO COORDS", 400
 
-    # if 'image' not in request.files:
-    #     return "No image file provided", 400
+    if 'image' not in request.files:
+        return "No image file provided", 400
     
-    # image_file = request.files['image']
+    image_file = request.files['image']
     
     # --------------------------------------------------------------------
     coord_data = request.form['coords']
@@ -83,19 +98,21 @@ def predict_snn_endpoint():
     lng = coords_dict.get('lng')
     # --------------------------------------------------------------------
     
-    # # Check if the file is actually an image
-    # if image_file.filename == '':
-    #     return "No image selected", 400
+    # Check if the file is actually an image
+    if image_file.filename == '':
+        return "No image selected", 400
     
-    # image_folder = 'predictionImages'
-    # if not os.path.exists(image_folder):
-    #     os.makedirs(image_folder)
+    image_folder = 'inputImage'
+    if not os.path.exists(image_folder):
+        os.makedirs(image_folder)
         
-    # image_path = os.path.join(image_folder, image_file.filename)
-    # image_file.save(image_path)
+    image_path = os.path.join(image_folder, image_file.filename)
+    image_file.save(image_path)
     # --------------------------------------------------------------------
     
-    predict_snn(lat, lng)
+    safety_score = predict_snn(lat, lng)
+    print("FINAL CALCULATED SCORE: ", safety_score,"/ 8")
+    
     return "INPUT RECEIVED"
 
 if __name__ == '__main__':
