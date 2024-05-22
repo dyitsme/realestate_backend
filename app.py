@@ -113,7 +113,7 @@ def predict_snn_endpoint():
     safety_score = predict_snn(lat, lng)
     print("FINAL CALCULATED SCORE: ", safety_score,"/ 8")
     
-    return "INPUT RECEIVED"
+    return safety_score
 
 if __name__ == '__main__':
     app.run(debug=True)
