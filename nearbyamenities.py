@@ -12,7 +12,7 @@ from geopy.distance import geodesic
 app = Flask(__name__)
 CORS(app)
 
-def nearby_amenities(longitude, latitude):
+def nearby_amenities(longitude, latitude, city):
     # Retrieve the JSON string from form data
     json_str = request.form.get('coords')
 
@@ -29,14 +29,16 @@ def nearby_amenities(longitude, latitude):
     point = Point(longitude, latitude)
     print(Point)
     # Your logic to compute nearby amenities
-    amenities = compute_nearby_amenities(point)
+    amenities = compute_nearby_amenities(point, city)
 
     return amenities
 
-def read_amenities_file():
+def read_amenities_file(city):
     # Load GeoJSON file of amenities into a GeoDataFrame
-    # amenities_gdf = gpd.read_file('Amenity Files/pasig_amenities.geojson')
-    amenities_gdf = gpd.read_file('Amenity Files/pq_amenities.geojson')
+    if city == 'pasig':
+        amenities_gdf = gpd.read_file('Amenity Files/pasig_amenities.geojson')
+    elif city == 'paranaque':
+        amenities_gdf = gpd.read_file('Amenity Files/pq_amenities.geojson')
 
     amenities_gdf_projected = amenities_gdf
 
@@ -105,8 +107,8 @@ def walkability_score(distance):
     walk_score = e**(-5*(distance/1000)**5)
     return walk_score
 
-def compute_nearby_amenities(point):
-    read_amenities_file()
+def compute_nearby_amenities(point, city):
+    read_amenities_file(city)
     category_mapping()
     walkability_score()
 
