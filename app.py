@@ -46,7 +46,8 @@ def predict_xgb(parsed_data):
         "operation_city_0_0": 0,
         "operation_city_0_1": 0,
         "operation_city_1_0": 0,
-        "operation_city_1_1": 0
+        "operation_city_1_1": 0,
+        "ModelScore": 0
     }
 
     # List of amenities to be added to df_data
@@ -81,35 +82,61 @@ def predict_xgb(parsed_data):
 
     if client_data["propertyType"] == 'apartment':
         df_data['type_encoded'] = 0
+        print("apartment")
     elif client_data['propertyType'] == 'condominium':
         df_data['type_encoded'] = 1
+        print("condominium")
     elif client_data['propertyType'] == 'house':
         df_data['type_encoded'] = 2
+        print("house")
     elif client_data['propertyType'] == 'land':
         df_data["type_encoded"] = 3
+        print("land")
     else:   
+        print("INVALID")
+
+    if client_data['saleType'] == 'resale':
+        df_data['classification_Resale'] = 1
+        print("resale")
+    elif client_data['saleType'] == 'new':
+        df_data['classification_Brand New'] = 1
+        print("new")
+    else:
         print("INVALID")
 
     if client_data['furnishing'] == 'unfurnished':
         df_data['fully furnished_No'] = 1
+        print("unfurnished")
     elif client_data['furnishing'] == 'semi':
         df_data['fully furnished_Semi'] = 1
-    elif client_data['furnishing'] == 'semi':
+        print("semi")
+    elif client_data['furnishing'] == 'complete':
         df_data['fully furnished_Yes'] = 1
+        print("complete")
     else:
         print("INVALID")
 
     if client_data['city'] == 'pasig' and client_data['operation'] == 'buy':
         df_data['operation_city_0_1'] = 1
+        print("pasig_buy")
     elif client_data['city'] == 'pasig' and client_data['operation'] == 'rent':
         df_data['operation_city_1_1'] = 1
+        print("pasig_rent")
     elif client_data['city'] == 'paranaque' and client_data['operation'] == 'buy':
         df_data['operation_city_0_0'] = 1
+        print("paranaque_buy")
     elif client_data['city'] == 'paranaque' and client_data['operation'] == 'rent':
         df_data['operation_city_1_0'] = 1
+        print("paranaque_rent")
     else:
         print("INVALID")
         
+    image_file = request.files['image']
+
+    score = predict_snn(image_file, client_data['lat'], client_data['lng'], client_data['city'])
+
+    df_data["ModelScore"] = score
+
     main_df = pd.DataFrame([df_data])  
 
     amenities = nearby_amenities(client_data['lng'], client_data['lat'])
@@ -134,19 +161,227 @@ def nearby_endpoint():
 
     return "DONE"
 
+# @app.route('/predict_xgb', methods=['POST'])
+# def predict_xgb_endpoint():
+#     try:
+#         # Get JSON data from request
+#         data = request.form.to_dict()
+#         # Perform prediction
+#         prediction = predict_xgb(data)
+#         # Return prediction as JSON
+#         return jsonify({'prediction': prediction})  # can change to just a single float value
+    
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 400
+
 @app.route('/predict_xgb', methods=['POST'])
 def predict_xgb_endpoint():
     try:
-        # Get JSON data from request
-        data = request.get_json(force=True)
-        # Perform prediction
-        prediction = predict_xgb(data)
-        # Return prediction as JSON
-        return jsonify({'prediction': prediction})  # can change to just a single float value
+        #coordinates
+        coords_str = request.form.get('coords')
+        coords_data = json.loads(coords_str)
+
+        #operation
+        op_str = request.form.get('operation')
+        op_data = json.loads(op_str)
+
+        #saleType
+        st_str = request.form.get('saleType')
+        st_data = json.loads(st_str)
+
+        #furnish
+        furnish_str = request.form.get('furnishing')
+        furnish_data = json.loads(furnish_str)
+
+        #propertyType
+        pt_str = request.form.get('propertyType')
+        pt_data = json.loads(pt_str)
+
+        #city
+        city_str = request.form.get('city')
+        city_data = json.loads(city_str)
+
+        client_data = {
+            'lat': coords_data['lat'],
+            'lng': coords_data['lng'],
+            'operation': op_data, #buy/rent
+            'saleType': st_data, #new, resale
+            'furnishing': furnish_data, #unfurnished, semi, complete
+            'propertyType': pt_data, #house, land, etc
+            'city': city_data
+        }
+
+        print(client_data["lat"])
+        print(client_data["lng"])
+        print(client_data["operation"])
+        print(client_data["saleType"])
+        print(client_data["furnishing"])
+        print(client_data["propertyType"])
+        print(client_data["city"])
+
+        #bedrooms
+        bedrooms_str = request.form.get('bedrooms')
+        bedrooms = json.loads(bedrooms_str)
+
+        print(bedrooms)
+        # bathrooms
+        bathrooms_str = request.form.get('bathrooms')
+        bathrooms = json.loads(bathrooms_str)
+        print(bathrooms)
+
+        # lotSize
+        lot_size_str = request.form.get('lotSize')
+        lot_size = json.loads(lot_size_str)
+        print(lot_size)
+
+        # floor area (m2)
+        floor_area_str = request.form.get('floorArea')
+        floor_area = json.loads(floor_area_str)
+        print(floor_area)
+
+        # build (year)
+        build_year_str = request.form.get('age')
+        build_year = json.loads(build_year_str)
+        print(build_year)
+
+        # total floors
+        total_floors_str = request.form.get('totalFloors')
+        total_floors = json.loads(total_floors_str)
+        print(total_floors)
+
+        # car spaces
+        car_spaces_str = request.form.get('carSpaces')
+        car_spaces = json.loads(car_spaces_str)
+        print(car_spaces)
+
+        df_data = {
+            'bedrooms': bedrooms,
+            'bathrooms': bathrooms,
+            'lotSize': lot_size,
+            'floor area (m2)': floor_area,
+            'build (year)': build_year,
+            'total floors': total_floors,
+            'car spaces': car_spaces,
+            "classification_Brand New": 0,
+            "classification_Resale": 0,
+            "fully furnished_No": 0,
+            "fully furnished_Semi": 0,
+            "fully furnished_Yes": 0,
+            "type_encoded": 0,
+            "operation_city_0_0": 0,
+            "operation_city_0_1": 0,
+            "operation_city_1_0": 0,
+            "operation_city_1_1": 0,
+            "ModelScore": 0
+        }
+
+        # List of amenities to be added to df_data
+        amenities_list = [
+            "gym", "wi-fi", "swimming pool", "pay tv access", "basketball court", "jogging path",
+            "alarm system", "lounge", "entertainment room", "parks", "cctv", "basement parking",
+            "elevators", "fire exits", "function room", "lobby", "reception area", "fire alarm",
+            "fire sprinkler system", "24-hour security", "garden", "secure parking", "bar",
+            "maid's room", "playground", "gymnasium", "utility room", "billiards table",
+            "business center", "club house", "fitness center", "game room", "meeting rooms",
+            "multi-purpose hall", "shower rooms", "sky lounge", "smoke detector", "social hall",
+            "study room", "function area", "open space", "gazebos", "shops", "study area",
+            "carport", "clubhouse", "deck", "gazebo", "landscaped garden", "multi-purpose lawn",
+            "parking lot", "theater", "daycare center", "sauna", "laundry area", "courtyard",
+            "badminton court", "tennis court", "jacuzzi", "central air conditioning", "health club",
+            "indoor spa", "outdoor spa", "pool bar", "indoor pool", "drying area", "floorboards",
+            "split-system heating", "garage", "remote garage", "sports facilities", "powder room",
+            "maids room", "library", "spa", "clinic", "open car spaces", "intercom", "ensuite",
+            "pond", "amphitheater", "gas heating", "hydronic heating", "indoor tree house",
+            "open fireplace", "helipad", "golf area", "storage room", "terrace", "driver's room",
+            "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace"
+        ]
+
+        # Add amenities to df_data with initial value of 0
+        for amenity in amenities_list:
+            df_data[amenity] = 0
+            print(amenity)
+
+        # Update df_data based on the amenities provided in the JSON
+        # for amenity in data['amenities']:
+        #     if amenity['isSelected']:
+        #         df_data[amenity] = 1
+
+        if client_data["propertyType"] == 'apartment':
+            df_data['type_encoded'] = 0
+            print("apartment")
+        elif client_data['propertyType'] == 'condominium':
+            df_data['type_encoded'] = 1
+            print("condominium")
+        elif client_data['propertyType'] == 'house':
+            df_data['type_encoded'] = 2
+            print("house")
+        elif client_data['propertyType'] == 'land':
+            df_data["type_encoded"] = 3
+            print("land")
+        else:   
+            print("INVALID")
+
+        if client_data['saleType'] == 'resale':
+            df_data['classification_Resale'] = 1
+            print("resale")
+        elif client_data['saleType'] == 'new':
+            df_data['classification_Brand New'] = 1
+            print("new")
+        else:
+            print("INVALID")
+
+        if client_data['furnishing'] == 'unfurnished':
+            df_data['fully furnished_No'] = 1
+            print("unfurnished")
+        elif client_data['furnishing'] == 'semi':
+            df_data['fully furnished_Semi'] = 1
+            print("semi")
+        elif client_data['furnishing'] == 'complete':
+            df_data['fully furnished_Yes'] = 1
+            print("complete")
+        else:
+            print("INVALID")
+
+        if client_data['city'] == 'pasig' and client_data['operation'] == 'buy':
+            df_data['operation_city_0_1'] = 1
+            print("pasig_buy")
+        elif client_data['city'] == 'pasig' and client_data['operation'] == 'rent':
+            df_data['operation_city_1_1'] = 1
+            print("pasig_rent")
+        elif client_data['city'] == 'paranaque' and client_data['operation'] == 'buy':
+            df_data['operation_city_0_0'] = 1
+            print("paranaque_buy")
+        elif client_data['city'] == 'paranaque' and client_data['operation'] == 'rent':
+            df_data['operation_city_1_0'] = 1
+            print("paranaque_rent")
+        else:
+            print("INVALID")
+            
+        #image_file = request.files['image']
+
+        #score = predict_snn(image_file, client_data['lat'], client_data['lng'], client_data['city'])
+
+        #df_data["ModelScore"] = score
+
+        main_df = pd.DataFrame([df_data])  
+
+        amenities = nearby_amenities(client_data['lng'], client_data['lat'], client_data['city'])
+
+        print(amenities)
+
+        final_df = pd.concat([main_df, amenities], axis=1)
+
+        try:
+            # Make prediction
+            prediction = model.predict(final_df)
+            return jsonify({'prediction': prediction})  # can change to just a single float value
+        
+        except Exception as e:
+            return str(e)
     
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-
+    
 @app.route('/predict_snn', methods=['POST'])
 def predict_snn_endpoint():
     

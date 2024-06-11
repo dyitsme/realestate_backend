@@ -33,17 +33,6 @@ def nearby_amenities(longitude, latitude, city):
 
     return amenities
 
-def read_amenities_file(city):
-    # Load GeoJSON file of amenities into a GeoDataFrame
-    if city == 'pasig':
-        amenities_gdf = gpd.read_file('Amenity Files/pasig_amenities.geojson')
-    elif city == 'paranaque':
-        amenities_gdf = gpd.read_file('Amenity Files/pq_amenities.geojson')
-
-    amenities_gdf_projected = amenities_gdf
-
-    # Specify the distance threshold (in meters)
-    distance_threshold = 1000  # Adjust as needed
 
 def category_mapping():
     category_mapping = {
@@ -108,9 +97,18 @@ def walkability_score(distance):
     return walk_score
 
 def compute_nearby_amenities(point, city):
-    read_amenities_file(city)
+
+    if city == 'pasig':
+        amenities_gdf = gpd.read_file('pasig_amenities.geojson')
+    elif city == 'paranaque':
+        amenities_gdf = gpd.read_file('pq_amenities.geojson')
+
+    amenities_gdf_projected = amenities_gdf
+
+    # Specify the distance threshold (in meters)
+    distance_threshold = 1000  # Adjust as needed
+
     category_mapping()
-    walkability_score()
 
     amenities_data = pd.DataFrame()
 
@@ -119,44 +117,44 @@ def compute_nearby_amenities(point, city):
     listing_distance_sum = {category: 0 for category in category_mapping}
     listing_num = {category: 0 for category in category_mapping}
         
-        for amenity_idx, amenity_row in amenities_gdf_projected.iterrows():
-            # print("LISTING",listing.geometry)
-            # print("AMENITY",amenity_row.geometry)
-            # print(amenity_row.amenity)
-            
-            # amen_distance = get_route_coordinates((listing.geometry.y,listing.geometry.x),(amenity_row.geometry.y,amenity_row.geometry.x))
-            # print(amen_distance)   
-            
-            distance = geodesic((point.geometry.y, point.geometry.x), (amenity_row.geometry.y, amenity_row.geometry.x)).meters
-            # print("Distance using geodesic:", distance_geodesic)
-            
+    for amenity_idx, amenity_row in amenities_gdf_projected.iterrows():
+        # print("LISTING",listing.geometry)
+        # print("AMENITY",amenity_row.geometry)
+        # print(amenity_row.amenity)
+        
+        # amen_distance = get_route_coordinates((listing.geometry.y,listing.geometry.x),(amenity_row.geometry.y,amenity_row.geometry.x))
+        # print(amen_distance)   
+        
+        distance = geodesic((point.geometry.y, point.geometry.x), (amenity_row.geometry.y, amenity_row.geometry.x)).meters
+        # print("Distance using geodesic:", distance_geodesic)
+        
 
-            # Check if the amenity falls under any category
-            for category, details in category_mapping.items():
-                
-                column_name1 = category + "_nearest_distance"
-                column_name2 = category + "_walkability_score"
-                column_name3 = category + "_avg_distance"
-                column_name = category
+        # Check if the amenity falls under any category
+        for category, details in category_mapping.items():
+            
+            column_name1 = category + "_nearest_distance"
+            column_name2 = category + "_walkability_score"
+            column_name3 = category + "_avg_distance"
+            column_name = category
 
-                if amenity_row.amenity in details['amenities']:
-                    if (distance <= distance_threshold):
-                        
-                        listing_distance_sum[category] += distance
-                        listing_num[category] += 1
-                        amenities_data.at[0, column_name3] = listing_distance_sum[category] / listing_num[category]
-                        amenities_data.at[0, column_name] = listing_num[category]
-                        
-                        # Update shortest distance if the current distance is shorter
-                        if (listing_shortest_distances[category] is None or distance < listing_shortest_distances[category]):
-                            listing_shortest_distances[category] = distance
-                            amenities_data.at[0, column_name1] = distance
-                            amenities_data.at[0, column_name2] = walkability_score(distance)
-                                                                
-                    break  # No need to continue checking other categories for this amenity
-    
-        for category, distance in amenities_data.items():
-            print(f"Shortest distance to {category}: {distance}")
+            if amenity_row.amenity in details['amenities']:
+                if (distance <= distance_threshold):
+                    
+                    listing_distance_sum[category] += distance
+                    listing_num[category] += 1
+                    amenities_data.at[0, column_name3] = listing_distance_sum[category] / listing_num[category]
+                    amenities_data.at[0, column_name] = listing_num[category]
+                    
+                    # Update shortest distance if the current distance is shorter
+                    if (listing_shortest_distances[category] is None or distance < listing_shortest_distances[category]):
+                        listing_shortest_distances[category] = distance
+                        amenities_data.at[0, column_name1] = distance
+                        amenities_data.at[0, column_name2] = walkability_score(distance)
+                                                            
+                break  # No need to continue checking other categories for this amenity
+
+    for category, distance in amenities_data.items():
+        print(f"Shortest distance to {category}: {distance}")
 
     return amenities_data
 
