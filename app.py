@@ -257,8 +257,8 @@ def predict_xgb_endpoint():
         df_data = {
             'bedrooms': bedrooms,
             'bathrooms': bathrooms,
-            'lotSize': lot_size,
-            'floor area (m2)': floor_area,
+            'land size (mÂ²)': lot_size,
+            'floor area (mÂ²)': floor_area,
             'build (year)': build_year,
             'total floors': total_floors,
             'car spaces': car_spaces,

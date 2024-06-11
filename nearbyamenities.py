@@ -27,14 +27,36 @@ def nearby_amenities(longitude, latitude, city):
     print(longitude)
 
     point = Point(longitude, latitude)
-    print(Point)
+    print(point)
     # Your logic to compute nearby amenities
     amenities = compute_nearby_amenities(point, city)
 
     return amenities
 
+def walkability_score(distance):
+    
+    if(distance > 1000):
+        return 0
+    
+    e = math.e
+    
+    walk_score = e**(-5*(distance/1000)**5)
+    return walk_score
 
-def category_mapping():
+def compute_nearby_amenities(point, city):
+
+    if city == 'pasig':
+        amenities_gdf = gpd.read_file('pasig_amenities.geojson')
+    elif city == 'paranaque':
+        amenities_gdf = gpd.read_file('pq_amenities.geojson')
+
+    amenities_gdf_projected = amenities_gdf
+
+    # Specify the distance threshold (in meters)
+    distance_threshold = 1000  # Adjust as needed
+
+    amenities_data = pd.DataFrame()
+
     category_mapping = {
         'vehicle_services': {'amenities': ['fuel', 'car_wash', 'compressed_air', 'car_repair', 'car', 'car_parts', 'gas', 'battery'], 'tags': ['shop', 'amenity', 'car_parts']},
         
@@ -84,49 +106,39 @@ def category_mapping():
                                         'parking_space', 'subway_entrance'], 'tags': ['amenity', 'shop', 'railway']},
         # Add more categories and corresponding amenities/tags as needed
     }
-    
 
-def walkability_score(distance):
-    
-    if(distance > 1000):
-        return 0
-    
-    e = math.e
-    
-    walk_score = e**(-5*(distance/1000)**5)
-    return walk_score
+    # for category_name in category_mapping:
+    #     column_name1 = category_name + "_nearest_distance"
+    #     column_name2 = category_name + "_walkability_score"
+    #     column_name3 = category_name + "_avg_distance"
+    #     amenities_data[column_name1] = None
+    #     amenities_data[column_name2] = None
+    #     amenities_data[column_name3] = None
+        
+    #     column_name = category_name
+    #     amenities_data[column_name] = None
 
-def compute_nearby_amenities(point, city):
+    print("category")
 
-    if city == 'pasig':
-        amenities_gdf = gpd.read_file('pasig_amenities.geojson')
-    elif city == 'paranaque':
-        amenities_gdf = gpd.read_file('pq_amenities.geojson')
-
-    amenities_gdf_projected = amenities_gdf
-
-    # Specify the distance threshold (in meters)
-    distance_threshold = 1000  # Adjust as needed
-
-    category_mapping()
-
-    amenities_data = pd.DataFrame()
-
+    print("initiate")
     # Iterate over each listing
     listing_shortest_distances = {category: float('inf') for category in category_mapping}
     listing_distance_sum = {category: 0 for category in category_mapping}
     listing_num = {category: 0 for category in category_mapping}
         
+    print("HLEPP")
     for amenity_idx, amenity_row in amenities_gdf_projected.iterrows():
         # print("LISTING",listing.geometry)
-        # print("AMENITY",amenity_row.geometry)
-        # print(amenity_row.amenity)
+        print("AMENITY",amenity_row.geometry)
+        print(amenity_row.amenity)
         
         # amen_distance = get_route_coordinates((listing.geometry.y,listing.geometry.x),(amenity_row.geometry.y,amenity_row.geometry.x))
         # print(amen_distance)   
+
+        distance = point.distance(amenity_row.geometry)
         
-        distance = geodesic((point.geometry.y, point.geometry.x), (amenity_row.geometry.y, amenity_row.geometry.x)).meters
-        # print("Distance using geodesic:", distance_geodesic)
+        #distance = geodesic((gdf_point[0].geometry.y, gdf_point[0].geometry.x), (amenity_row.geometry.y, amenity_row.geometry.x)).meters
+        print("Distance using geodesic:", distance)
         
 
         # Check if the amenity falls under any category
