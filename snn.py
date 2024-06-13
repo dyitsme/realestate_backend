@@ -36,11 +36,11 @@ if(snn_model is not None):
     print("LOADED MODEL")
 
 def predict_snn(lat, long):
-    print("START PREDICT PROCEDURE", lat, long)
+    #print("START PREDICT PROCEDURE", lat, long)
 
     try:
         counter, score = get_images_in_range(lat, long)
-        print("result", counter, score)
+        #print("result", counter, score)
         
         
 
@@ -58,9 +58,9 @@ def predict_snn(lat, long):
         
         finalSafetyAve = finalSafetySum / (counter + len(input_scores))
         
-        print("final count: ", counter + len(input_scores))
-        print("FINAL SUM: ", finalSafetySum)
-        print("FINAL SCORE: ", finalSafetyAve)
+        #print("final count: ", counter + len(input_scores))
+        #print("FINAL SUM: ", finalSafetySum)
+        #print("FINAL SCORE: ", finalSafetyAve)
         
         return finalSafetyAve
     except Exception as e:
@@ -100,7 +100,7 @@ def get_images_in_range(lat, long):
             download_image(image_url, image_path)
             # print("SAVED UNDER 1000")
 
-    print("finished", counter)
+    #print("finished", counter)
 
     return saved, score
         
@@ -110,7 +110,7 @@ def image_from_CSV():
     for index, row in df.iterrows():
         image_url = row['imageUrl']
         if pd.isna(image_url):
-            print(f"No URL found for row {index}")
+            #print(f"No URL found for row {index}")
             continue
         
         # Define the local image path
@@ -193,7 +193,7 @@ def compare_images_in_folder():
             img2 = img2.resize((128, 128))
             csv_image_array = np.array(img2)
             
-            print("TEST",test_COUNTER) 
+            #print("TEST",test_COUNTER) 
             similarity_score = snn_model.predict([np.expand_dims(image_array, axis=0), np.expand_dims(csv_image_array, axis=0)])
             test_COUNTER+=1
         
@@ -205,178 +205,38 @@ def compare_images_in_folder():
         
         safetyScoreAve = 0 
         for score, index in scores:
-            print("SIMI", score)
+            #print("SIMI", score)
             
             safe = data.loc[index, 'calculatedScores']
             
-            print("SAFETY", safe)
+            #print("SAFETY", safe)
             
             safetyScoreAve += data.loc[index, 'calculatedScores']
         
         safetyScoreAve/=5
         
-        print("New", safetyScoreAve)    
+        #print("New", safetyScoreAve)    
         
         results.append(safetyScoreAve)
         
            
     return results 
-            
-    
-    
-    # print("START")
-    # try:
-    #     finalScores = 0
-    #     counter = 0
-        
-    #     # images = []
-    #     for filename in os.listdir(input_folder):  
-    #         feature = json_data.get('features', [])[0]
-    #         if feature:
-    #             properties = feature.get('properties',{})
-    #             image_url = properties.get('thumb_2048_url')
-                                    
-    #             if image_url:
-    #                 print("URL:", image_url)
-    #                 image = download_image(image_url)
-    #                 if image:
-                        
-    #                     print("GOT IMAGE")
-                        
-    #                     top_scores = []
-                        
-    #                     image = image.resize((128, 128))
-    #                     print("RESIZED")
-                        
-    #                     # image_array = preprocess_image(image)
-    #                     for image_index, csv_image_url in enumerate(csv_image_urls):
-    #                         csv_image = download_image(csv_image_url)
-    #                         print("csvURL ",csv_image_url)
-    #                         if csv_image:
-    #                             print("GOT CSV IMAGE")
-                                
-    #                             # csv_image_array = preprocess_image(csv_image)
-    #                             csv_image = csv_image.resize((128, 128))
-    #                             print("CSV_RESIZED")
-                                
-    #                             image_array = np.array(image)
-    #                             csv_image_array = np.array(csv_image)
-
-
-    #                             # similarity_score = snn_model.predict([image_array, csv_image_array])
-    #                             similarity_score = snn_model.predict([np.expand_dims(image_array, axis=0), np.expand_dims(csv_image_array, axis=0)])
-                                
-    #                             print("TEST_URL:", image_url)
-    #                             print("TEST_csvURL ",csv_image_url)
-    #                             print("SCORE", similarity_score)
-    #                             print("")
-                                
-    #                             # print(f"Comparison score between {image_url} and {csv_image_url}: {similarity_score}")
-                                
-    #                             if len(top_scores) < 5:
-    #                                 heapq.heappush(top_scores, (similarity_score, image_index))
-    #                             else:
-    #                                 heapq.heappushpop(top_scores, (similarity_score, image_index))
-                                    
-                        
-    #                     print("START AVERAGING")        
-    #                     safetyScoreAve = 0 
-    #                     for simi_score, index in top_scores:
-    #                         safetyScoreAve += df.loc[index, 'calculatedScores']
-                        
-    #                     safetyScoreAve /= 5
-    #                     print("safetyScoreAve = ", safetyScoreAve)
-    #                     finalScores += safetyScoreAve
-    #                     counter+=1
-    #                     print("next IMAGE")
-
-    #     finalScoresAve = finalScores / counter
-    #     print("FINISHED SAFETY SCORE CALC")
-        
-    #     return finalScoresAve
-    # except Exception as e:
-    #     return str(e)
-    
-    
-# def gather_distanced_images(lat, long):
-#     try:
-#         coordinates = (lat,long)
-#         print("COORDINATES CONVERT",coordinates)
-        
-#         # Iterate over all JSON files in the MapilJSON folder
-        
-#         # also need to run this for pasig
-        
-        
-#         for filename in os.listdir('Mapil_Images\paranaque'):
-#             print("Checking file:", filename)
-#             if filename.endswith('.geojson'):
-#                 print("TEST1 - GeoJSON  file found:", filename)
-#                 filepath = os.path.join('Mapil_Images\paranaque', filename)
-#                 print("TEST2 - Filepath constructed:", filepath)
-#                 with open(filepath, 'r') as file:
-#                     json_data = json.load(file)
-#                     print("TEST3 - JSON data loaded")
-
-#                     # file_coordinates = json_data.get('coordinates')  # Assuming the key is 'coordinates'
-#                     for feature in json_data.get('features', []):
-#                         file_coordinates = feature['geometry'].get('coordinates')
-                    
-#                         if file_coordinates:
-                            
-#                             # print("TEST4 - Coordinates found in JSON:", file_coordinates)                     
-#                             jsonCoord = (file_coordinates[1],file_coordinates[0])
-#                             print("TEST5 - Coordinates found in JSON:", jsonCoord) 
-                            
-#                             distance = geodesic(coordinates, jsonCoord).meters
-#                             print("Distance calculated:", distance)
-
-#                         # distance = geodesic(coordinates, file_coordinates).meters
-#                         # print(distance)
-                        
-#                             if distance < 1000:
-#                                 # print("FOUND ONE")
-#                                 # time.sleep(1)
-#                                 if is_over_50m_from_all_images(coordinates): 
-#                                     # print("SAVED")
-#                                     # time.sleep(1)
-                                    
-#                                     output_filepath = os.path.join(output_folder, filename)
-#                                     with open(output_filepath, 'w') as output_file:
-#                                         json.dump(json_data, output_file)
-                                
-#                                     print(f"JSON data from {filename} saved in {output_folder}. Distance: {distance} meters.")
-                                
-#                                 # else:
-#                                     # print("OVER 50m")
-#                                     # time.sleep(1)
-#                             else:
-#                                 print(f"Distance {distance} is greater than 1000 meters.")
-#                         else:
-#                             print("No coordinates found in JSON data.")
-#             else:
-#                 print(f"{filename} is not a GeoJSON file.")    
-                    
-#         return "Comparison completed"
-#     except Exception as e:
-#         return str(e)
-    
     
 def gather_distanced_images(lat, long):
     try:
         coordinates = (lat, long)
-        print("COORDINATES CONVERT", coordinates)
+        #print("COORDINATES CONVERT", coordinates)
 
         # Iterate over all JSON files in the MapilJSON folder
         for filename in os.listdir('Mapil_Images\paranaque'):
-            print("Checking file:", filename)
+            #print("Checking file:", filename)
             if filename.endswith('.geojson'):
-                print("TEST1 - GeoJSON file found:", filename)
+                #print("TEST1 - GeoJSON file found:", filename)
                 filepath = os.path.join('Mapil_Images/paranaque', filename)
-                print("TEST2 - Filepath constructed:", filepath)
+                #print("TEST2 - Filepath constructed:", filepath)
                 with open(filepath, 'r') as file:
                     json_data = json.load(file)
-                    print("TEST3 - JSON data loaded")
+                    #print("TEST3 - JSON data loaded")
 
                     # Process only the first feature in the GeoJSON file
                     features = json_data.get('features', [])
@@ -386,10 +246,10 @@ def gather_distanced_images(lat, long):
                     
                         if file_coordinates:
                             jsonCoord = (file_coordinates[1], file_coordinates[0])
-                            print("TEST5 - Coordinates found in JSON:", jsonCoord)
+                            #print("TEST5 - Coordinates found in JSON:", jsonCoord)
                             
                             distance = geodesic(coordinates, jsonCoord).meters
-                            print("Distance calculated:", distance)
+                            #print("Distance calculated:", distance)
 
                             if distance < 1000:
                                 if is_over_50m_from_all_images(coordinates): 
@@ -403,7 +263,7 @@ def gather_distanced_images(lat, long):
                                     with open(output_filepath, 'w') as output_file:
                                         json.dump(new_json_data, output_file)
                                     
-                                    print(f"Relevant JSON data from {filename} saved in {output_JSON_folder}. Distance: {distance} meters.")
+                                    #print(f"Relevant JSON data from {filename} saved in {output_JSON_folder}. Distance: {distance} meters.")
                                 else:
                                     print("Coordinate is not over 50m from all images.")
                             else:

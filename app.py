@@ -1,3 +1,4 @@
+import shutil
 from flask import Flask, request, jsonify
 import numpy as np
 import xgboost as xgb
@@ -7,149 +8,15 @@ import pandas as pd
 from snn import snn_model, predict_snn
 from nearbyamenities import nearby_amenities
 from werkzeug.utils import secure_filename
-
+from shapely.geometry import Point
+import geopandas as gpd
+from shapely.ops import nearest_points
 
 app = Flask(__name__)
 
 # Load the model
 model = xgb.XGBRegressor()
 model.load_model('xgb_model_gavin_best.json')
-
-#update when input is available
-def predict_xgb(parsed_data):
-    data = json.loads(parsed_data)
-    
-    client_data = {
-        'lat': data['coords']['lat'],
-        'lng': data['coords']['lng'],
-        'operation': data['operation'], #buy/rent
-        'saleType': data['saleType'], #new, resale
-        'furnishing': data['furnishing'], #unfurnished, semi, complete
-        'propertyType': data['propertyType'], #house, land, etc
-        'city': data['city']
-    }
-
-    df_data = {
-        'bedrooms': data['bedrooms'],
-        'bathrooms': data['bathrooms'],
-        'lotSize': data['lotSize'],
-        'floor area (m2)': data['floorArea'],
-        'build (year)': data['age'],
-        'total floors': data['totalFloors'],
-        'car spaces': data['carSpaces'],
-        "classification_Brand New": 0,
-        "classification_Resale": 0,
-        "fully furnished_No": 0,
-        "fully furnished_Semi": 0,
-        "fully furnished_Yes": 0,
-        "type_encoded": 0,
-        "operation_city_0_0": 0,
-        "operation_city_0_1": 0,
-        "operation_city_1_0": 0,
-        "operation_city_1_1": 0,
-        "ModelScore": 0
-    }
-
-    # List of amenities to be added to df_data
-    amenities_list = [
-        "gym", "wi-fi", "swimming pool", "pay tv access", "basketball court", "jogging path",
-        "alarm system", "lounge", "entertainment room", "parks", "cctv", "basement parking",
-        "elevators", "fire exits", "function room", "lobby", "reception area", "fire alarm",
-        "fire sprinkler system", "24-hour security", "garden", "secure parking", "bar",
-        "maid's room", "playground", "gymnasium", "utility room", "billiards table",
-        "business center", "club house", "fitness center", "game room", "meeting rooms",
-        "multi-purpose hall", "shower rooms", "sky lounge", "smoke detector", "social hall",
-        "study room", "function area", "open space", "gazebos", "shops", "study area",
-        "carport", "clubhouse", "deck", "gazebo", "landscaped garden", "multi-purpose lawn",
-        "parking lot", "theater", "daycare center", "sauna", "laundry area", "courtyard",
-        "badminton court", "tennis court", "jacuzzi", "central air conditioning", "health club",
-        "indoor spa", "outdoor spa", "pool bar", "indoor pool", "drying area", "floorboards",
-        "split-system heating", "garage", "remote garage", "sports facilities", "powder room",
-        "maids room", "library", "spa", "clinic", "open car spaces", "intercom", "ensuite",
-        "pond", "amphitheater", "gas heating", "hydronic heating", "indoor tree house",
-        "open fireplace", "helipad", "golf area", "storage room", "terrace", "driver's room",
-        "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace"
-    ]
-
-    # Add amenities to df_data with initial value of 0
-    for amenity in amenities_list:
-        df_data[amenity] = 0
-
-    # Update df_data based on the amenities provided in the JSON
-    for amenity in data['amenities']:
-        if amenity['isSelected']:
-            df_data[amenity] = 1
-
-    if client_data["propertyType"] == 'apartment':
-        df_data['type_encoded'] = 0
-        print("apartment")
-    elif client_data['propertyType'] == 'condominium':
-        df_data['type_encoded'] = 1
-        print("condominium")
-    elif client_data['propertyType'] == 'house':
-        df_data['type_encoded'] = 2
-        print("house")
-    elif client_data['propertyType'] == 'land':
-        df_data["type_encoded"] = 3
-        print("land")
-    else:   
-        print("INVALID")
-
-    if client_data['saleType'] == 'resale':
-        df_data['classification_Resale'] = 1
-        print("resale")
-    elif client_data['saleType'] == 'new':
-        df_data['classification_Brand New'] = 1
-        print("new")
-    else:
-        print("INVALID")
-
-    if client_data['furnishing'] == 'unfurnished':
-        df_data['fully furnished_No'] = 1
-        print("unfurnished")
-    elif client_data['furnishing'] == 'semi':
-        df_data['fully furnished_Semi'] = 1
-        print("semi")
-    elif client_data['furnishing'] == 'complete':
-        df_data['fully furnished_Yes'] = 1
-        print("complete")
-    else:
-        print("INVALID")
-
-    if client_data['city'] == 'pasig' and client_data['operation'] == 'buy':
-        df_data['operation_city_0_1'] = 1
-        print("pasig_buy")
-    elif client_data['city'] == 'pasig' and client_data['operation'] == 'rent':
-        df_data['operation_city_1_1'] = 1
-        print("pasig_rent")
-    elif client_data['city'] == 'paranaque' and client_data['operation'] == 'buy':
-        df_data['operation_city_0_0'] = 1
-        print("paranaque_buy")
-    elif client_data['city'] == 'paranaque' and client_data['operation'] == 'rent':
-        df_data['operation_city_1_0'] = 1
-        print("paranaque_rent")
-    else:
-        print("INVALID")
-        
-    image_file = request.files['image']
-
-    score = predict_snn(image_file, client_data['lat'], client_data['lng'], client_data['city'])
-
-    df_data["ModelScore"] = score
-
-    main_df = pd.DataFrame([df_data])  
-
-    amenities = nearby_amenities(client_data['lng'], client_data['lat'])
-
-    final_df = pd.concat([main_df, amenities], axis=1)
-
-    try:
-        # Make prediction
-        prediction = model.predict(final_df)
-        return prediction.tolist()
-    except Exception as e:
-        return str(e)
-
 
 @app.route('/')
 def home():
@@ -174,9 +41,31 @@ def nearby_endpoint():
 #     except Exception as e:
 #         return jsonify({'error': str(e)}), 400
 
+# Function to calculate the distance from a point to the nearest fault line
+def min_distance_to_fault(point, fault_lines):
+    try:
+        nearest_line = nearest_points(point, fault_lines.unary_union)[1]
+        return point.distance(nearest_line)
+    except Exception as e:
+        print(f"Error calculating minimum distance: {e}")
+        return None
+    
+
+# Function to get expected feature names from XGBoost model
+def get_expected_features(model):
+    try:
+        # Assuming model is an XGBRegressor or XGBClassifier
+        return model.get_booster().feature_names
+    except Exception as e:
+        print(f"Error getting feature names: {str(e)}")
+        return []
+    
 @app.route('/predict_xgb', methods=['POST'])
 def predict_xgb_endpoint():
     try:
+        expected_features = get_expected_features(model)
+            
+        print(expected_features)
         #coordinates
         coords_str = request.form.get('coords')
         coords_data = json.loads(coords_str)
@@ -211,57 +100,44 @@ def predict_xgb_endpoint():
             'city': city_data
         }
 
-        print(client_data["lat"])
-        print(client_data["lng"])
-        print(client_data["operation"])
-        print(client_data["saleType"])
-        print(client_data["furnishing"])
-        print(client_data["propertyType"])
-        print(client_data["city"])
-
         #bedrooms
         bedrooms_str = request.form.get('bedrooms')
         bedrooms = json.loads(bedrooms_str)
 
-        print(bedrooms)
         # bathrooms
         bathrooms_str = request.form.get('bathrooms')
         bathrooms = json.loads(bathrooms_str)
-        print(bathrooms)
 
         # lotSize
         lot_size_str = request.form.get('lotSize')
         lot_size = json.loads(lot_size_str)
-        print(lot_size)
 
         # floor area (m2)
         floor_area_str = request.form.get('floorArea')
         floor_area = json.loads(floor_area_str)
-        print(floor_area)
 
         # build (year)
         build_year_str = request.form.get('age')
         build_year = json.loads(build_year_str)
-        print(build_year)
 
         # total floors
         total_floors_str = request.form.get('totalFloors')
         total_floors = json.loads(total_floors_str)
-        print(total_floors)
 
         # car spaces
         car_spaces_str = request.form.get('carSpaces')
         car_spaces = json.loads(car_spaces_str)
-        print(car_spaces)
 
         df_data = {
             'bedrooms': bedrooms,
             'bathrooms': bathrooms,
-            'land size (mÂ²)': lot_size,
-            'floor area (mÂ²)': floor_area,
+            'land size': lot_size,
+            'land size (m2)': lot_size,
+            'floor area': floor_area,
             'build (year)': build_year,
             'total floors': total_floors,
             'car spaces': car_spaces,
+            'rooms (total)': bedrooms,
             "classification_Brand New": 0,
             "classification_Resale": 0,
             "fully furnished_No": 0,
@@ -272,7 +148,12 @@ def predict_xgb_endpoint():
             "operation_city_0_1": 0,
             "operation_city_1_0": 0,
             "operation_city_1_1": 0,
-            "ModelScore": 0
+            "ModelScores": 0,
+            "sqm_upper": floor_area,
+            "sqm_lower": floor_area,
+            "min_distance_to_fault_meters": 0,
+            "flood_threat_level_5_yr": 0,
+            "flood_threat_level_25_yr": 0
         }
 
         # List of amenities to be added to df_data
@@ -293,13 +174,14 @@ def predict_xgb_endpoint():
             "maids room", "library", "spa", "clinic", "open car spaces", "intercom", "ensuite",
             "pond", "amphitheater", "gas heating", "hydronic heating", "indoor tree house",
             "open fireplace", "helipad", "golf area", "storage room", "terrace", "driver's room",
-            "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace"
+            "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace",
+            "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
+            "air conditioning", "balcony"
         ]
 
         # Add amenities to df_data with initial value of 0
         for amenity in amenities_list:
             df_data[amenity] = 0
-            print(amenity)
 
         # Update df_data based on the amenities provided in the JSON
         # for amenity in data['amenities']:
@@ -308,64 +190,89 @@ def predict_xgb_endpoint():
 
         if client_data["propertyType"] == 'apartment':
             df_data['type_encoded'] = 0
-            print("apartment")
         elif client_data['propertyType'] == 'condominium':
             df_data['type_encoded'] = 1
-            print("condominium")
         elif client_data['propertyType'] == 'house':
             df_data['type_encoded'] = 2
-            print("house")
         elif client_data['propertyType'] == 'land':
             df_data["type_encoded"] = 3
-            print("land")
         else:   
             print("INVALID")
 
         if client_data['saleType'] == 'resale':
             df_data['classification_Resale'] = 1
-            print("resale")
         elif client_data['saleType'] == 'new':
             df_data['classification_Brand New'] = 1
-            print("new")
         else:
             print("INVALID")
 
         if client_data['furnishing'] == 'unfurnished':
             df_data['fully furnished_No'] = 1
-            print("unfurnished")
         elif client_data['furnishing'] == 'semi':
             df_data['fully furnished_Semi'] = 1
-            print("semi")
         elif client_data['furnishing'] == 'complete':
             df_data['fully furnished_Yes'] = 1
-            print("complete")
         else:
             print("INVALID")
 
         if client_data['city'] == 'pasig' and client_data['operation'] == 'buy':
             df_data['operation_city_0_1'] = 1
-            print("pasig_buy")
         elif client_data['city'] == 'pasig' and client_data['operation'] == 'rent':
             df_data['operation_city_1_1'] = 1
-            print("pasig_rent")
         elif client_data['city'] == 'paranaque' and client_data['operation'] == 'buy':
             df_data['operation_city_0_0'] = 1
-            print("paranaque_buy")
         elif client_data['city'] == 'paranaque' and client_data['operation'] == 'rent':
             df_data['operation_city_1_0'] = 1
-            print("paranaque_rent")
         else:
             print("INVALID")
             
+
+        folder_path = 'predictionImages'
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print("Failed to delete")
+
+        print("Folder emptied successfully")
+        
+        # ---------------------------------------------------------------------------------------------------------
+        
+        folder_path = 'inputImage'
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print("Failed to delete")
+
+        print("Folder emptied successfully")
+
+
         image_file = request.files['image']
 
-        score = predict_snn(image_file, client_data['lat'], client_data['lng'])
+        # Check if the file is actually an image
+        if image_file.filename == '':
+            return "No image selected", 400
+        
+        image_folder = 'inputImage'
+        if not os.path.exists(image_folder):
+            os.makedirs(image_folder)
+            
+        image_path = os.path.join(image_folder, image_file.filename)
+        image_file.save(image_path)
+        # --------------------------------------------------------------------
 
-        print(score)
+        score = predict_snn(client_data['lat'], client_data['lng'])
 
-        df_data["ModelScore"] = score
-
-        print(df_data["ModelScore"])
+        df_data["ModelScores"] = score
 
         main_df = pd.DataFrame([df_data])  
 
@@ -375,9 +282,101 @@ def predict_xgb_endpoint():
 
         final_df = pd.concat([main_df, amenities], axis=1)
 
+        client_df = pd.DataFrame([client_data])
+
+        flood_map_5yr = gpd.read_file('Flood files/MetroManila5yr.gpkg')
+        flood_map_25yr = gpd.read_file('Flood files/MetroManila25yr.gpkg')
+
+        # Convert latitude and longitude columns in listings DataFrame to Point geometries
+        listings_geometry = [Point(xy) for xy in zip(client_df['lng'], client_df['lat'])]
+        listings_gdf = gpd.GeoDataFrame(client_df, geometry=listings_geometry)
+
+        # Set CRS for amenities GeoDataFrame
+        flood_map_5yr.crs = "EPSG:4326"  # Assuming the coordinates are in WGS84 (latitude and longitude)
+
+        # Set CRS for amenities GeoDataFrame
+        flood_map_25yr.crs = "EPSG:4326"  # Assuming the coordinates are in WGS84 (latitude and longitude)
+
+        # Set CRS for listings GeoDataFrame
+        listings_gdf.crs = "EPSG:4326"  # Assuming the coordinates are in WGS84 (latitude and longitude)
+
+        # Perform spatial join between property listings and flood data 5 yr
+        listings_with_flood = gpd.sjoin(listings_gdf, flood_map_5yr, how="left", op="intersects")
+
+        # Check if the spatial join was successful
+        if 'Var' in listings_with_flood.columns:
+            # Merge the flood threat level information back to the original DataFrame
+            final_df['flood_threat_level_5_yr'] = listings_with_flood['Var']
+        else:
+            # Set a default value for flood threat level if not found
+            final_df['flood_threat_level_5_yr'] = "Unknown"
+
+        # Perform spatial join between property listings and flood data 25 yr
+        listings_with_flood = gpd.sjoin(listings_gdf, flood_map_25yr, how="left", op="intersects")
+
+        # Check if the spatial join was successful
+        if 'Var' in listings_with_flood.columns:
+            # Merge the flood threat level information back to the original DataFrame
+            final_df['flood_threat_level_25_yr'] = listings_with_flood['Var']
+        else:
+            # Set a default value for flood threat level if not found
+            final_df['flood_threat_level_25_yr'] = "Unknown"
+
+        fault_lines = gpd.read_file("Earthquake Files/gem_active_faults_harmonized.gpkg")
+
+        # Convert longitude and latitude columns of property listings DataFrame to Point geometries
+        listings_geometry = [Point(xy) for xy in zip(client_df['lng'], client_df['lat'])]
+        listings_gdf = gpd.GeoDataFrame(client_df, geometry=listings_geometry)
+
+        # Set CRS for amenities GeoDataFrame
+        fault_lines.crs = "EPSG:4326"  # Assuming the coordinates are in WGS84 (latitude and longitude)
+
+        # Set CRS for listings GeoDataFrame
+        listings_gdf.crs = "EPSG:4326"  # Assuming the coordinates are in WGS84 (latitude and longitude)
+
+        # Reproject the fault_lines GeoDataFrame to EPSG:3857
+        fault_lines = fault_lines.to_crs("EPSG:3857")
+
+        # Reproject the listings GeoDataFrame to EPSG:3857
+        listings_gdf = listings_gdf.to_crs("EPSG:3857")
+
+        # Calculate minimum distance to the nearest fault line for each property listing
+        final_df['min_distance_to_fault_meters'] = listings_gdf['geometry'].apply(
+            lambda point: min_distance_to_fault(point, fault_lines.geometry)
+        )
+
+        print("Number of columns:", len(final_df.columns))
+
         try:
+             # Verify if the DataFrame is in the expected format
+            # Get expected features from the model
+            # expected_features = get_expected_features(model)
+            
+            # print(expected_features)
+
+            # print("Number: ", len(expected_features))
+
+            # if not expected_features:
+            #     return jsonify({'error': 'Failed to retrieve expected features from model'}), 500
+            
+            # # Check for any extra or missing features
+            # input_features = final_df.columns.tolist()
+            # missing_features = [f for f in expected_features if f not in input_features]
+            # extra_features = [f for f in input_features if f not in expected_features]
+            
+            # if missing_features:
+            #     return jsonify({'error': f'Missing features: {missing_features}'}), 400
+            
+            # if extra_features:
+            #     return jsonify({'error': f'Extra features: {extra_features}'}), 400
+            
+             # Print to check feature names
+            expected_features = get_expected_features(model)
+            print("Expected Features:", sorted(expected_features))
+            print("Input Data Columns:", sorted(final_df.columns.tolist()))
             # Make prediction
             prediction = model.predict(final_df)
+
             return jsonify({'prediction': prediction})  # can change to just a single float value
         
         except Exception as e:
