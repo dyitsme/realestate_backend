@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import model_from_json
 # from tensorflow.keras.utils import get_custom_objects
@@ -60,9 +61,9 @@ def predict_snn(image, lat, long):
         
         # continue the calculation here 
         # output_folder = 'predictionImages'
-        compare_images_in_folder(output_folder)
+        score = compare_images_in_folder(output_folder)
 
-        return 
+        return score
     except Exception as e:
         return str(e)
 

@@ -118,19 +118,19 @@ def compute_nearby_amenities(point, city):
     #     column_name = category_name
     #     amenities_data[column_name] = None
 
-    print("category")
+    #print("category")
 
-    print("initiate")
+    #print("initiate")
     # Iterate over each listing
     listing_shortest_distances = {category: float('inf') for category in category_mapping}
     listing_distance_sum = {category: 0 for category in category_mapping}
     listing_num = {category: 0 for category in category_mapping}
         
-    print("HLEPP")
+    #print("HLEPP")
     for amenity_idx, amenity_row in amenities_gdf_projected.iterrows():
         # print("LISTING",listing.geometry)
-        print("AMENITY",amenity_row.geometry)
-        print(amenity_row.amenity)
+        #print("AMENITY",amenity_row.geometry)
+        #print(amenity_row.amenity)
         
         # amen_distance = get_route_coordinates((listing.geometry.y,listing.geometry.x),(amenity_row.geometry.y,amenity_row.geometry.x))
         # print(amen_distance)   
@@ -138,7 +138,7 @@ def compute_nearby_amenities(point, city):
         distance = point.distance(amenity_row.geometry)
         
         #distance = geodesic((gdf_point[0].geometry.y, gdf_point[0].geometry.x), (amenity_row.geometry.y, amenity_row.geometry.x)).meters
-        print("Distance using geodesic:", distance)
+        #print("Distance using geodesic:", distance)
         
 
         # Check if the amenity falls under any category
@@ -165,8 +165,8 @@ def compute_nearby_amenities(point, city):
                                                             
                 break  # No need to continue checking other categories for this amenity
 
-    for category, distance in amenities_data.items():
-        print(f"Shortest distance to {category}: {distance}")
+    #for category, distance in amenities_data.items():
+        #print(f"Shortest distance to {category}: {distance}")
 
     return amenities_data
 

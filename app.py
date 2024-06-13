@@ -357,17 +357,21 @@ def predict_xgb_endpoint():
         else:
             print("INVALID")
             
-        #image_file = request.files['image']
+        image_file = request.files['image']
 
-        #score = predict_snn(image_file, client_data['lat'], client_data['lng'], client_data['city'])
+        score = predict_snn(image_file, client_data['lat'], client_data['lng'])
 
-        #df_data["ModelScore"] = score
+        print(score)
+
+        df_data["ModelScore"] = score
+
+        print(df_data["ModelScore"])
 
         main_df = pd.DataFrame([df_data])  
 
         amenities = nearby_amenities(client_data['lng'], client_data['lat'], client_data['city'])
 
-        print(amenities)
+        #print(amenities)
 
         final_df = pd.concat([main_df, amenities], axis=1)
 
