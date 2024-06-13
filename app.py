@@ -389,9 +389,34 @@ def predict_xgb_endpoint():
 @app.route('/predict_snn', methods=['POST'])
 def predict_snn_endpoint():
     
-    print("TEST")
+    folder_path = 'predictionImages'
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print("Failed to delete")
 
-    # expect point data
+    print("Folder emptied successfully")
+    
+    # ---------------------------------------------------------------------------------------------------------
+    
+    folder_path = 'inputImage'
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print("Failed to delete")
+
+    print("Folder emptied successfully")
+
     
     if 'coords' not in request.form:
         return "NO COORDS", 400
@@ -401,9 +426,8 @@ def predict_snn_endpoint():
     
     image_file = request.files['image']
     
+    # --------------------------------------------------------------------
     coord_data = request.form['coords']
-    
-    print("COORDS",coord_data)
     
     # Load coordinates JSON data
     try:
@@ -414,19 +438,24 @@ def predict_snn_endpoint():
     # Extract latitude and longitude values
     lat = coords_dict.get('lat')
     lng = coords_dict.get('lng')
-    
-    print("LATLONG", lat,lng)
+    # --------------------------------------------------------------------
     
     # Check if the file is actually an image
     if image_file.filename == '':
         return "No image selected", 400
     
-    print("Image received and processed successfully")
+    image_folder = 'inputImage'
+    if not os.path.exists(image_folder):
+        os.makedirs(image_folder)
+        
+    image_path = os.path.join(image_folder, image_file.filename)
+    image_file.save(image_path)
+    # --------------------------------------------------------------------
     
+    safety_score = predict_snn(lat, lng)
+    print("FINAL CALCULATED SCORE: ", safety_score,"/ 8")
     
-    predict_snn(image_file, lat, lng)
-    
-    return "INPUT RECEIVED"
+    return safety_score
 
 if __name__ == '__main__':
     app.run(debug=True)
