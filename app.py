@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 # Load the model
 model = xgb.XGBRegressor()
-model.load_model('xgb_model_gavin_best.json')
+model.load_model('xgb_model_gavin_best_fixed.json')
 
 @app.route('/')
 def home():
@@ -131,23 +131,22 @@ def predict_xgb_endpoint():
         df_data = {
             'bedrooms': bedrooms,
             'bathrooms': bathrooms,
-            'land size': lot_size,
-            'land size (m2)': lot_size,
             'floor area': floor_area,
+            'land size': lot_size,
             'build (year)': build_year,
             'total floors': total_floors,
             'car spaces': car_spaces,
             'rooms (total)': bedrooms,
-            "classification_Brand New": 0,
-            "classification_Resale": 0,
-            "fully furnished_No": 0,
-            "fully furnished_Semi": 0,
-            "fully furnished_Yes": 0,
+            "classification_Brand New": False,
+            "classification_Resale": False,
+            "fully furnished_No": False,
+            "fully furnished_Semi": False,
+            "fully furnished_Yes": False,
             "type_encoded": 0,
-            "operation_city_0_0": 0,
-            "operation_city_0_1": 0,
-            "operation_city_1_0": 0,
-            "operation_city_1_1": 0,
+            "operation_city_0_0": False,
+            "operation_city_0_1": False,
+            "operation_city_1_0": False,
+            "operation_city_1_1": False,
             "ModelScores": 0,
             "sqm_upper": floor_area,
             "sqm_lower": floor_area,
@@ -176,7 +175,7 @@ def predict_xgb_endpoint():
             "open fireplace", "helipad", "golf area", "storage room", "terrace", "driver's room",
             "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace",
             "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
-            "air conditioning", "balcony"
+            "air conditioning", "balcony", 'dryer', 'dryer.1', 'duct', 'duct.1', 'fibre', "living room"
         ]
 
         # Add amenities to df_data with initial value of 0
@@ -200,29 +199,29 @@ def predict_xgb_endpoint():
             print("INVALID")
 
         if client_data['saleType'] == 'resale':
-            df_data['classification_Resale'] = 1
+            df_data['classification_Resale'] = True
         elif client_data['saleType'] == 'new':
-            df_data['classification_Brand New'] = 1
+            df_data['classification_Brand New'] = True
         else:
             print("INVALID")
 
         if client_data['furnishing'] == 'unfurnished':
-            df_data['fully furnished_No'] = 1
+            df_data['fully furnished_No'] = True
         elif client_data['furnishing'] == 'semi':
-            df_data['fully furnished_Semi'] = 1
+            df_data['fully furnished_Semi'] = True
         elif client_data['furnishing'] == 'complete':
-            df_data['fully furnished_Yes'] = 1
+            df_data['fully furnished_Yes'] = True
         else:
             print("INVALID")
 
         if client_data['city'] == 'pasig' and client_data['operation'] == 'buy':
-            df_data['operation_city_0_1'] = 1
+            df_data['operation_city_0_1'] = True
         elif client_data['city'] == 'pasig' and client_data['operation'] == 'rent':
-            df_data['operation_city_1_1'] = 1
+            df_data['operation_city_1_1'] = True
         elif client_data['city'] == 'paranaque' and client_data['operation'] == 'buy':
-            df_data['operation_city_0_0'] = 1
+            df_data['operation_city_0_0'] = True
         elif client_data['city'] == 'paranaque' and client_data['operation'] == 'rent':
-            df_data['operation_city_1_0'] = 1
+            df_data['operation_city_1_0'] = True
         else:
             print("INVALID")
             
@@ -345,39 +344,107 @@ def predict_xgb_endpoint():
             lambda point: min_distance_to_fault(point, fault_lines.geometry)
         )
 
+        columns_to_float = ["gym", "wi-fi", "swimming pool", "pay tv access", "basketball court", "jogging path",
+            "alarm system", "lounge", "entertainment room", "parks", "cctv", "basement parking",
+            "elevators", "fire exits", "function room", "lobby", "reception area", "fire alarm",
+            "fire sprinkler system", "24-hour security", "garden", "secure parking", "bar",
+            "maid's room", "playground", "gymnasium", "utility room", "billiards table",
+            "business center", "club house", "fitness center", "game room", "meeting rooms",
+            "multi-purpose hall", "shower rooms", "sky lounge", "smoke detector", "social hall",
+            "study room", "function area", "open space", "gazebos", "shops", "study area",
+            "carport", "clubhouse", "deck", "gazebo", "landscaped garden", "multi-purpose lawn",
+            "parking lot", "theater", "daycare center", "sauna", "laundry area", "courtyard",
+            "badminton court", "tennis court", "jacuzzi", "central air conditioning", "health club",
+            "indoor spa", "outdoor spa", "pool bar", "indoor pool", "drying area", "floorboards",
+            "split-system heating", "garage", "remote garage", "sports facilities", "powder room",
+            "maids room", "library", "spa", "clinic", "open car spaces", "intercom", "ensuite",
+            "pond", "amphitheater", "gas heating", "hydronic heating", "indoor tree house",
+            "open fireplace", "helipad", "golf area", "storage room", "terrace", "driver's room",
+            "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace",
+            "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
+            "air conditioning", "balcony", 'bedrooms', 'bathrooms', 'land size', 
+            'floor area', 'build (year)', 'total floors', 'car spaces', 'rooms (total)', 'dryer', 'dryer.1', 'duct', 'duct.1', 'fibre', "living room"]
+        
+        columns_to_int = ["sqm_upper", "sqm_lower"]
+        # Convert specified columns to float
+        final_df[columns_to_float] = final_df[columns_to_float].astype(float)
+
+        final_df[columns_to_int] = final_df[columns_to_int].astype(int)
+
         print("Number of columns:", len(final_df.columns))
 
+        print("Input Data Types:")
+        for col in final_df.columns:
+            print(f"Column: {col}, Data Type: {final_df[col].dtype}")
+
+        expected_order = ['bedrooms', 'baths', 'floor area', 'broadband internet available', 'air conditioning', 'car spaces', 'total floors', 
+                          'built-in wardrobes', 'balcony', 'build (year)', 'fully fenced', 'rooms (total)', 'gym', 'wi-fi', 'swimming pool', 'pay tv access', 
+                          'basketball court', 'jogging path', 'alarm system', 'lounge', 'entertainment room', 'parks', 'cctv', 'basement parking', 'elevators', 
+                          'fire exits', 'function room', 'lobby', 'reception area', 'fire alarm', 'fire sprinkler system', '24-hour security', 'garden', 'secure parking', 
+                          'bar', "maid's room", 'playground', 'gymnasium', 'utility room', 'billiards table', 'business center', 'club house', 'fitness center', 
+                          'game room', 'meeting rooms', 'multi-purpose hall', 'shower rooms', 'sky lounge', 'smoke detector', 'social hall', 'study room', 
+                          'function area', 'open space', 'gazebos', 'shops', 'study area', 'carport', 'clubhouse', 'deck', 'gazebo', 'landscaped garden', 
+                          'multi-purpose lawn', 'parking lot', 'theater', 'daycare center', 'sauna', 'laundry area', 'courtyard', 'badminton court', 
+                          'tennis court', 'jacuzzi', 'central air conditioning', 'health club', 'indoor spa', 'outdoor spa', 'pool bar', 'indoor pool', 
+                          'drying area', 'floorboards', 'split-system heating', 'garage', 'remote garage', 'sports facilities', 'powder room', 
+                          'maids room', 'library', 'spa', 'clinic', 'open car spaces', 'intercom', 'ensuite', 'pond', 'amphitheater', 'gas heating', 
+                          'hydronic heating', 'indoor tree house', 'open fireplace', 'helipad', 'golf area', 'bathrooms', 'land size', 'storage room', 
+                          'terrace', "driver's room", 'attic', 'basement', 'lanai', 'ducted cooling', 'ducted vacuum system', 'fireplace', 'ModelScores', 
+                          'vehicle_services_nearest_distance', 'vehicle_services_walkability_score', 'vehicle_services_avg_distance', 'night_life_nearest_distance', 
+                          'night_life_walkability_score', 'night_life_avg_distance', 'personal_care_nearest_distance', 'personal_care_walkability_score', 
+                          'personal_care_avg_distance', 'administrative_offices_nearest_distance', 'administrative_offices_walkability_score', 
+                          'administrative_offices_avg_distance', 'education_nearest_distance', 'education_walkability_score', 'education_avg_distance', 
+                          'food_nearest_distance', 'food_walkability_score', 'food_avg_distance', 'general_establishments_nearest_distance', 
+                          'general_establishments_walkability_score', 'general_establishments_avg_distance', 'healthcare_industries_nearest_distance', 
+                          'healthcare_industries_walkability_score', 'healthcare_industries_avg_distance', 'service_providers_nearest_distance', 
+                          'service_providers_walkability_score', 'service_providers_avg_distance', 'recreational_nearest_distance', 'recreational_walkability_score', 
+                          'recreational_avg_distance', 'living_facilities_nearest_distance', 'living_facilities_walkability_score', 'living_facilities_avg_distance', 
+                          'religion_nearest_distance', 'religion_walkability_score', 'religion_avg_distance', 'financial_nearest_distance', 'financial_walkability_score', 
+                          'financial_avg_distance', 'specialized_stores_nearest_distance', 'specialized_stores_walkability_score', 'specialized_stores_avg_distance', 
+                          'transportation_nearest_distance', 'transportation_walkability_score', 'transportation_avg_distance', 'flood_threat_level_5_yr', 
+                          'flood_threat_level_25_yr', 'min_distance_to_fault_meters', 'vehicle_services', 'night_life', 'personal_care', 'administrative_offices', 
+                          'education', 'food', 'general_establishments', 'healthcare_industries', 'service_providers', 'recreational', 'living_facilities', 
+                          'religion', 'financial', 'specialized_stores', 'transportation', 'sqm_lower', 'sqm_upper', 'classification_Brand New', 'classification_Resale', 
+                          'fully furnished_No', 'fully furnished_Semi', 'fully furnished_Yes', 
+                          'type_encoded', 'operation_city_0_0', 'operation_city_0_1', 'operation_city_1_0', 'operation_city_1_1']
+
+        final_df = final_df[expected_order]
+
         try:
-             # Verify if the DataFrame is in the expected format
+            # Verify if the DataFrame is in the expected format
             # Get expected features from the model
-            # expected_features = get_expected_features(model)
-            
-            # print(expected_features)
+            expected_features = get_expected_features(model)
 
-            # print("Number: ", len(expected_features))
-
-            # if not expected_features:
-            #     return jsonify({'error': 'Failed to retrieve expected features from model'}), 500
+            if not expected_features:
+                return jsonify({'error': 'Failed to retrieve expected features from model'}), 500
             
             # # Check for any extra or missing features
-            # input_features = final_df.columns.tolist()
-            # missing_features = [f for f in expected_features if f not in input_features]
-            # extra_features = [f for f in input_features if f not in expected_features]
+            input_features = final_df.columns.tolist()
+            missing_features = [f for f in expected_features if f not in input_features]
+            extra_features = [f for f in input_features if f not in expected_features]
             
-            # if missing_features:
-            #     return jsonify({'error': f'Missing features: {missing_features}'}), 400
+            if missing_features:
+                return jsonify({'error': f'Missing features: {missing_features}'}), 400
             
-            # if extra_features:
-            #     return jsonify({'error': f'Extra features: {extra_features}'}), 400
+            if extra_features:
+                return jsonify({'error': f'Extra features: {extra_features}'}), 400
             
-             # Print to check feature names
-            expected_features = get_expected_features(model)
-            print("Expected Features:", sorted(expected_features))
-            print("Input Data Columns:", sorted(final_df.columns.tolist()))
+            # Print to check feature names
+            # expected_features = get_expected_features(model)
+            # print("Expected Features:", sorted(expected_features))
+            # print("Input Data Columns:", sorted(final_df.columns.tolist()))
+            print("Before Prediction")
             # Make prediction
             prediction = model.predict(final_df)
 
-            return jsonify({'prediction': prediction})  # can change to just a single float value
+            print("Prediction: ", prediction)
+            
+            # Convert prediction to JSON serializable format
+            json_prediction = json.dumps({"prediction": float(prediction)})
+
+            print("After Prediction")
+
+            return jsonify({'prediction': json_prediction})  # can change to just a single float value
         
         except Exception as e:
             return str(e)
