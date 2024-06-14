@@ -63,9 +63,6 @@ def get_expected_features(model):
 @app.route('/predict_xgb', methods=['POST'])
 def predict_xgb_endpoint():
     try:
-        expected_features = get_expected_features(model)
-            
-        print(expected_features)
         #coordinates
         coords_str = request.form.get('coords')
         coords_data = json.loads(coords_str)
@@ -90,6 +87,13 @@ def predict_xgb_endpoint():
         city_str = request.form.get('city')
         city_data = json.loads(city_str)
 
+        #amenities_str = request.form.get('amenities')
+        #print(len(amenities_str))
+        
+    
+        #amenities_data = json.loads(amenities_str)
+        #print(amenities_data)
+
         client_data = {
             'lat': coords_data['lat'],
             'lng': coords_data['lng'],
@@ -97,7 +101,8 @@ def predict_xgb_endpoint():
             'saleType': st_data, #new, resale
             'furnishing': furnish_data, #unfurnished, semi, complete
             'propertyType': pt_data, #house, land, etc
-            'city': city_data
+            'city': city_data,
+            #'amenities': amenities_data
         }
 
         #bedrooms
@@ -148,8 +153,8 @@ def predict_xgb_endpoint():
             "operation_city_1_0": False,
             "operation_city_1_1": False,
             "ModelScores": 0,
-            "sqm_upper": floor_area,
-            "sqm_lower": floor_area,
+            "sqm_upper": 0,
+            "sqm_lower": 0,
             "min_distance_to_fault_meters": 0,
             "flood_threat_level_5_yr": 0,
             "flood_threat_level_25_yr": 0
@@ -183,9 +188,8 @@ def predict_xgb_endpoint():
             df_data[amenity] = 0
 
         # Update df_data based on the amenities provided in the JSON
-        # for amenity in data['amenities']:
-        #     if amenity['isSelected']:
-        #         df_data[amenity] = 1
+        for amenity in client_data['amenities']:
+            df_data[amenity] = 1
 
         if client_data["propertyType"] == 'apartment':
             df_data['type_encoded'] = 0
@@ -371,11 +375,11 @@ def predict_xgb_endpoint():
 
         final_df[columns_to_int] = final_df[columns_to_int].astype(int)
 
-        print("Number of columns:", len(final_df.columns))
+        #print("Number of columns:", len(final_df.columns))
 
-        print("Input Data Types:")
-        for col in final_df.columns:
-            print(f"Column: {col}, Data Type: {final_df[col].dtype}")
+        #print("Input Data Types:")
+        #for col in final_df.columns:
+            #print(f"Column: {col}, Data Type: {final_df[col].dtype}")
 
         expected_order = ['bedrooms', 'baths', 'floor area', 'broadband internet available', 'air conditioning', 'car spaces', 'total floors', 
                           'built-in wardrobes', 'balcony', 'build (year)', 'fully fenced', 'rooms (total)', 'gym', 'wi-fi', 'swimming pool', 'pay tv access', 
@@ -410,6 +414,37 @@ def predict_xgb_endpoint():
 
         final_df = final_df[expected_order]
 
+        # List of columns that need to be converted to float
+        columns_to_convert = [
+            'vehicle_services_nearest_distance', 'vehicle_services_walkability_score', 'vehicle_services_avg_distance', 
+            'night_life_nearest_distance', 'night_life_walkability_score', 'night_life_avg_distance', 
+            'personal_care_nearest_distance', 'personal_care_walkability_score', 'personal_care_avg_distance', 
+            'administrative_offices_nearest_distance', 'administrative_offices_walkability_score', 'administrative_offices_avg_distance', 
+            'education_nearest_distance', 'education_walkability_score', 'education_avg_distance', 
+            'food_nearest_distance', 'food_walkability_score', 'food_avg_distance', 
+            'general_establishments_nearest_distance', 'general_establishments_walkability_score', 'general_establishments_avg_distance', 
+            'healthcare_industries_nearest_distance', 'healthcare_industries_walkability_score', 'healthcare_industries_avg_distance', 
+            'service_providers_nearest_distance', 'service_providers_walkability_score', 'service_providers_avg_distance', 
+            'recreational_nearest_distance', 'recreational_walkability_score', 'recreational_avg_distance', 
+            'living_facilities_nearest_distance', 'living_facilities_walkability_score', 'living_facilities_avg_distance', 
+            'religion_nearest_distance', 'religion_walkability_score', 'religion_avg_distance', 
+            'financial_nearest_distance', 'financial_walkability_score', 'financial_avg_distance', 
+            'specialized_stores_nearest_distance', 'specialized_stores_walkability_score', 'specialized_stores_avg_distance', 
+            'transportation_nearest_distance', 'transportation_walkability_score', 'transportation_avg_distance', 
+            'vehicle_services', 'night_life', 'personal_care', 'administrative_offices', 'education', 
+            'food', 'general_establishments', 'healthcare_industries', 'service_providers', 'recreational', 
+            'living_facilities', 'religion', 'financial', 'specialized_stores', 'transportation'
+        ]
+
+        # Convert specified columns to float
+        for column in columns_to_convert:
+            final_df[column] = pd.to_numeric(final_df[column], errors='coerce')
+
+        print(final_df['religion'])
+
+        for column in final_df.columns:
+            print(f"Column: {column}, Value: {final_df[column].values[0]}")
+
         try:
             # Verify if the DataFrame is in the expected format
             # Get expected features from the model
@@ -435,7 +470,9 @@ def predict_xgb_endpoint():
             # print("Input Data Columns:", sorted(final_df.columns.tolist()))
             print("Before Prediction")
             # Make prediction
-            prediction = model.predict(final_df)
+            prediction_log = model.predict(final_df)
+
+            prediction = np.exp(prediction_log)
 
             print("Prediction: ", prediction)
             
