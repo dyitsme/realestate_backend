@@ -483,7 +483,7 @@ def predict_xgb_endpoint():
 
             print("After Prediction")
 
-            return jsonify({"prediction": float(prediction)})  # can change to just a single float value
+            return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0])})  # can change to just a single float value
         
         except Exception as e:
             return str(e)
