@@ -188,8 +188,8 @@ def predict_xgb_endpoint():
             df_data[amenity] = 0
 
         # Update df_data based on the amenities provided in the JSON
-        for amenity in client_data['amenities']:
-            df_data[amenity] = 1
+        #for amenity in client_data['amenities']:
+        #    df_data[amenity] = 1
 
         if client_data["propertyType"] == 'apartment':
             df_data['type_encoded'] = 0
