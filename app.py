@@ -11,8 +11,10 @@ from werkzeug.utils import secure_filename
 from shapely.geometry import Point
 import geopandas as gpd
 from shapely.ops import nearest_points
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Load the model
 model = xgb.XGBRegressor()
@@ -69,23 +71,23 @@ def predict_xgb_endpoint():
 
         #operation
         op_str = request.form.get('operation')
-        op_data = json.loads(op_str)
+        # op_data = json.loads(op_str)
 
         #saleType
         st_str = request.form.get('saleType')
-        st_data = json.loads(st_str)
+        # st_data = json.loads(st_str)
 
         #furnish
         furnish_str = request.form.get('furnishing')
-        furnish_data = json.loads(furnish_str)
+        # furnish_data = json.loads(furnish_str)
 
         #propertyType
         pt_str = request.form.get('propertyType')
-        pt_data = json.loads(pt_str)
+        # pt_data = json.loads(pt_str)
 
         #city
         city_str = request.form.get('city')
-        city_data = json.loads(city_str)
+        # city_data = json.loads(city_str)
 
         #amenities_str = request.form.get('amenities')
         #print(len(amenities_str))
@@ -97,51 +99,51 @@ def predict_xgb_endpoint():
         client_data = {
             'lat': coords_data['lat'],
             'lng': coords_data['lng'],
-            'operation': op_data, #buy/rent
-            'saleType': st_data, #new, resale
-            'furnishing': furnish_data, #unfurnished, semi, complete
-            'propertyType': pt_data, #house, land, etc
-            'city': city_data,
+            'operation': op_str, #buy/rent
+            'saleType': st_str, #new, resale
+            'furnishing': furnish_str, #unfurnished, semi, complete
+            'propertyType': pt_str, #house, land, etc
+            'city': city_str,
             #'amenities': amenities_data
         }
 
         #bedrooms
         bedrooms_str = request.form.get('bedrooms')
-        bedrooms = json.loads(bedrooms_str)
+        # bedrooms = json.loads(bedrooms_str)
 
         # bathrooms
         bathrooms_str = request.form.get('bathrooms')
-        bathrooms = json.loads(bathrooms_str)
+        # bathrooms = json.loads(bathrooms_str)
 
         # lotSize
         lot_size_str = request.form.get('lotSize')
-        lot_size = json.loads(lot_size_str)
+        # lot_size = json.loads(lot_size_str)
 
         # floor area (m2)
         floor_area_str = request.form.get('floorArea')
-        floor_area = json.loads(floor_area_str)
+        # floor_area = json.loads(floor_area_str)
 
         # build (year)
         build_year_str = request.form.get('age')
-        build_year = json.loads(build_year_str)
+        # build_year = json.loads(build_year_str)
 
         # total floors
         total_floors_str = request.form.get('totalFloors')
-        total_floors = json.loads(total_floors_str)
+        # total_floors = json.loads(total_floors_str)
 
         # car spaces
         car_spaces_str = request.form.get('carSpaces')
-        car_spaces = json.loads(car_spaces_str)
+        # car_spaces = json.loads(car_spaces_str)
 
         df_data = {
-            'bedrooms': bedrooms,
-            'bathrooms': bathrooms,
-            'floor area': floor_area,
-            'land size': lot_size,
-            'build (year)': build_year,
-            'total floors': total_floors,
-            'car spaces': car_spaces,
-            'rooms (total)': bedrooms,
+            'bedrooms': bedrooms_str,
+            'bathrooms': bathrooms_str,
+            'floor area': floor_area_str,
+            'land size': lot_size_str,
+            'build (year)': build_year_str,
+            'total floors': total_floors_str,
+            'car spaces': car_spaces_str,
+            'rooms (total)': bedrooms_str,
             "classification_Brand New": False,
             "classification_Resale": False,
             "fully furnished_No": False,
@@ -477,11 +479,11 @@ def predict_xgb_endpoint():
             print("Prediction: ", prediction)
             
             # Convert prediction to JSON serializable format
-            json_prediction = json.dumps({"prediction": float(prediction)})
+            # json_prediction = json.dumps({"prediction": float(prediction)})
 
             print("After Prediction")
 
-            return jsonify({'prediction': json_prediction})  # can change to just a single float value
+            return jsonify({"prediction": float(prediction)})  # can change to just a single float value
         
         except Exception as e:
             return str(e)
