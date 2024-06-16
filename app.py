@@ -483,7 +483,19 @@ def predict_xgb_endpoint():
 
             print("After Prediction")
 
-            return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0])})  # can change to just a single float value
+            importance = model.feature_importances_
+            # Create a DataFrame for better visualization
+            importance_df = pd.DataFrame({'Feature': final_df.columns, 'Importance': importance})
+            sorted_importance = importance_df.sort_values(by='Importance', ascending=False)
+            print(sorted_importance)
+
+            # Select top 6 features
+            top_6_importance = sorted_importance.head(6)
+
+            # Convert to list of dictionaries
+            importance_list = top_6_importance.to_dict(orient='records')
+
+            return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0]), "featureImportance": importance_list})  # can change to just a single float value
         
         except Exception as e:
             return str(e)
