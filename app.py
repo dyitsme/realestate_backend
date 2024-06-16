@@ -220,13 +220,13 @@ def predict_xgb_endpoint():
         else:
             print("INVALID")
 
-        if client_data['city'] == 'pasig' and client_data['operation'] == 'buy':
+        if client_data['city'] == 'Pasig' and client_data['operation'] == 'buy':
             df_data['operation_city_0_1'] = True
-        elif client_data['city'] == 'pasig' and client_data['operation'] == 'rent':
+        elif client_data['city'] == 'Pasig' and client_data['operation'] == 'rent':
             df_data['operation_city_1_1'] = True
-        elif client_data['city'] == 'paranaque' and client_data['operation'] == 'buy':
+        elif client_data['city'] == 'Parañaque' and client_data['operation'] == 'buy':
             df_data['operation_city_0_0'] = True
-        elif client_data['city'] == 'paranaque' and client_data['operation'] == 'rent':
+        elif client_data['city'] == 'Parañaque' and client_data['operation'] == 'rent':
             df_data['operation_city_1_0'] = True
         else:
             print("INVALID")

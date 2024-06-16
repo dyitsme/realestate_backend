@@ -55,9 +55,9 @@ def compute_nearby_amenities(lat, lng, city):
     listings_geometry = [Point(xy) for xy in zip(df['lng'], df['lat'])]
     listings_gdf = gpd.GeoDataFrame(df, geometry=listings_geometry)
 
-    if city == 'pasig':
+    if city == 'Pasig':
         amenities_gdf = gpd.read_file('pasig_amenities.geojson')
-    elif city == 'paranaque':
+    elif city == 'Parañaque':
         amenities_gdf = gpd.read_file('pq_amenities.geojson')
 
     listings_gdf_projected = listings_gdf
