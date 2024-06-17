@@ -490,7 +490,7 @@ def predict_xgb_endpoint():
             print(sorted_importance)
 
             # Select top 6 features
-            top_6_importance = sorted_importance.head(6)
+            top_6_importance = sorted_importance.iloc[5:11]
 
             # Convert to list of dictionaries
             importance_list = top_6_importance.to_dict(orient='records')
