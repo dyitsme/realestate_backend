@@ -12,6 +12,7 @@ from shapely.geometry import Point
 import geopandas as gpd
 from shapely.ops import nearest_points
 from flask_cors import CORS
+import shap
 
 app = Flask(__name__)
 CORS(app)
@@ -155,8 +156,8 @@ def predict_xgb_endpoint():
             "operation_city_1_0": False,
             "operation_city_1_1": False,
             "ModelScores": 0,
-            "sqm_upper": 0,
-            "sqm_lower": 0,
+            "sqm_upper": floor_area_str,
+            "sqm_lower": floor_area_str,
             "min_distance_to_fault_meters": 0,
             "flood_threat_level_5_yr": 0,
             "flood_threat_level_25_yr": 0
@@ -495,7 +496,30 @@ def predict_xgb_endpoint():
             # Convert to list of dictionaries
             importance_list = top_6_importance.to_dict(orient='records')
 
-            return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0]), "featureImportance": importance_list})  # can change to just a single float value
+            # Use SHAP to explain the prediction
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(final_df)
+            
+            # Extract the SHAP values for the first instance
+            shap_values_instance = shap_values[0]
+                
+                # Create a DataFrame for SHAP values
+            shap_df = pd.DataFrame({
+                'feature': final_df.columns,
+                'shap_value': shap_values_instance
+            })
+            
+            # Sort SHAP values
+            shap_df_sorted = shap_df.sort_values(by='shap_value', ascending=False)
+            
+            # Get top 3 positive and negative features
+            top_positive_features = shap_df_sorted.iloc[2:5].to_dict(orient='records')
+
+            # Sort SHAP values
+            shap_df_sorted = shap_df.sort_values(by='shap_value', ascending=True)
+            top_negative_features = shap_df_sorted.iloc[4:7].to_dict(orient='records')
+
+            return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0]), "featureImportance": importance_list, "top_positive": top_positive_features, "top_negative": top_negative_features})  # can change to just a single float value
         
         except Exception as e:
             return str(e)
