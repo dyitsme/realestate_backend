@@ -517,19 +517,21 @@ def predict_xgb_endpoint():
             # Extract the SHAP values for the first instance
             shap_values_instance = shap_values[0]
                 
-                # Create a DataFrame for SHAP values
+            # Create a DataFrame for SHAP values
             shap_df = pd.DataFrame({
                 'feature': final_df.columns,
                 'shap_value': shap_values_instance
             })
             
+            # Columns to disregard
             disregard_columns = ['operation_city_0_1', 'operation_city_0_0', 'operation_city_1_1', 'operation_city_1_0', 'type_encoded']
 
+            # Filter out disregarded columns
             shap_df_filtered = shap_df[~shap_df['feature'].isin(disregard_columns)]
 
             # Sort SHAP values
-            shap_df_filtered = shap_df.sort_values(by='shap_value', ascending=False)
-            
+            shap_df_filtered = shap_df_filtered.sort_values(by='shap_value', ascending=False)
+
             # Get top 3 positive and negative features
             top_positive_features = shap_df_filtered.head(3).to_dict(orient='records')
             top_negative_features = shap_df_filtered.tail(3).to_dict(orient='records')
