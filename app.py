@@ -156,8 +156,8 @@ def predict_xgb_endpoint():
             "operation_city_1_0": False,
             "operation_city_1_1": False,
             "ModelScores": 0,
-            "sqm_upper": floor_area_str,
-            "sqm_lower": floor_area_str,
+            "sqm_upper": 0,
+            "sqm_lower": 0,
             "min_distance_to_fault_meters": 0,
             "flood_threat_level_5_yr": 0,
             "flood_threat_level_25_yr": 0
@@ -509,15 +509,16 @@ def predict_xgb_endpoint():
                 'shap_value': shap_values_instance
             })
             
-            # Sort SHAP values
-            shap_df_sorted = shap_df.sort_values(by='shap_value', ascending=False)
-            
-            # Get top 3 positive and negative features
-            top_positive_features = shap_df_sorted.iloc[2:5].to_dict(orient='records')
+            disregard_columns = ['operation_city_0_1', 'operation_city_0_0', 'operation_city_1_1', 'operation_city_1_0', 'type_encoded']
+
+            shap_df_filtered = shap_df[~shap_df['feature'].isin(disregard_columns)]
 
             # Sort SHAP values
-            shap_df_sorted = shap_df.sort_values(by='shap_value', ascending=True)
-            top_negative_features = shap_df_sorted.iloc[4:7].to_dict(orient='records')
+            shap_df_filtered = shap_df.sort_values(by='shap_value', ascending=False)
+            
+            # Get top 3 positive and negative features
+            top_positive_features = shap_df_filtered.head(3).to_dict(orient='records')
+            top_negative_features = shap_df_filtered.tail(3).to_dict(orient='records')
 
             return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0]), "featureImportance": importance_list, "top_positive": top_positive_features, "top_negative": top_negative_features})  # can change to just a single float value
         
