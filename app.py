@@ -13,6 +13,7 @@ import geopandas as gpd
 from shapely.ops import nearest_points
 from flask_cors import CORS
 import shap
+import ast
 
 app = Flask(__name__)
 CORS(app)
@@ -90,10 +91,22 @@ def predict_xgb_endpoint():
         city_str = request.form.get('city')
         # city_data = json.loads(city_str)
 
-        #amenities_str = request.form.get('amenities')
-        #print(len(amenities_str))
-        
-    
+        amenities_str = request.form.get('amenities')
+
+        # Safely parse the string into a Python list
+        data_list = ast.literal_eval(amenities_str)
+
+        # Initialize an empty list to store split words
+        split_words = []
+
+        # Split each element in the list into words
+        for item in data_list:
+            words = item.split(',')  # Split by whitespace
+            split_words.extend(words)  # Extend the list with split words
+
+        # Print the resulting list of split words
+        print(split_words)
+
         #amenities_data = json.loads(amenities_str)
         #print(amenities_data)
 
@@ -105,7 +118,7 @@ def predict_xgb_endpoint():
             'furnishing': furnish_str, #unfurnished, semi, complete
             'propertyType': pt_str, #house, land, etc
             'city': city_str,
-            #'amenities': amenities_data
+            'amenities': split_words
         }
 
         #bedrooms
@@ -191,8 +204,9 @@ def predict_xgb_endpoint():
             df_data[amenity] = 0
 
         # Update df_data based on the amenities provided in the JSON
-        #for amenity in client_data['amenities']:
-        #    df_data[amenity] = 1
+        for amenity in client_data['amenities']:
+           df_data[amenity] = 1
+           print(amenity)
 
         if client_data["propertyType"] == 'apartment':
             df_data['type_encoded'] = 0
@@ -212,11 +226,11 @@ def predict_xgb_endpoint():
         else:
             print("INVALID")
 
-        if client_data['furnishing'] == 'unfurnished':
+        if client_data['furnishing'] == 'complete':
             df_data['fully furnished_No'] = True
         elif client_data['furnishing'] == 'semi':
             df_data['fully furnished_Semi'] = True
-        elif client_data['furnishing'] == 'complete':
+        elif client_data['furnishing'] == 'unfurnished':
             df_data['fully furnished_Yes'] = True
         else:
             print("INVALID")
