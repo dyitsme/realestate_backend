@@ -16,6 +16,7 @@ import shap
 import ast
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
+import joblib
 
 app = Flask(__name__)
 CORS(app)
@@ -23,6 +24,11 @@ CORS(app)
 # Load the model
 model = xgb.XGBRegressor()
 model.load_model('xgb_model_gavin_best_fixed.json')
+
+# Load the scaler
+amenity_scaler = joblib.load('amenity_robust_scaler.pkl')
+
+flood_scaler = joblib.load('flood_robust_scaler.pkl')
 
 @app.route('/')
 def home():
@@ -506,6 +512,24 @@ def predict_xgb_endpoint():
 
         final_df[columns_to_normalize] = final_df[columns_to_normalize].fillna(999999)
         
+        data_to_normalize = final_df[columns_to_normalize]
+
+        normalized_data = amenity_scaler.transform(data_to_normalize)
+
+        final_df[columns_to_normalize] = normalized_data
+
+        flood_columns = [
+            'flood_threat_level_5_yr', 'flood_threat_level_25_yr'
+        ]
+        
+        final_df[flood_columns] = final_df[flood_columns].fillna(999999)
+        
+        data_to_normalize = final_df[flood_columns]
+
+        normalized_data = flood_scaler.transform(data_to_normalize)
+
+        final_df[flood_columns] = normalized_data
+
         for column in final_df.columns:
             print(f"Column: {column}, Value: {final_df[column].values[0]}")
 
