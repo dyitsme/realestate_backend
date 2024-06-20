@@ -23,7 +23,7 @@ CORS(app)
 
 # Load the model
 model = xgb.XGBRegressor()
-model.load_model('xgb_model_gavin_best_fixed.json')
+model.load_model('xgb_model_gavin_best_96.json')
 
 # Load the scaler
 amenity_scaler = joblib.load('amenity_robust_scaler.pkl')
@@ -177,8 +177,8 @@ def predict_xgb_endpoint():
             "operation_city_1_0": False,
             "operation_city_1_1": False,
             "ModelScores": 0,
-            "sqm_upper": 0,
-            "sqm_lower": 0,
+            "sqm_upper": floor_area_str,
+            "sqm_lower": floor_area_str,
             "min_distance_to_fault_meters": 0,
             "flood_threat_level_5_yr": 0,
             "flood_threat_level_25_yr": 0
