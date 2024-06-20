@@ -14,6 +14,8 @@ from shapely.ops import nearest_points
 from flask_cors import CORS
 import shap
 import ast
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import RobustScaler
 
 app = Flask(__name__)
 CORS(app)
@@ -459,9 +461,55 @@ def predict_xgb_endpoint():
 
         print(final_df['religion'])
 
+        columns_to_fill = [
+            'vehicle_services_walkability_score', 'night_life_walkability_score', 'personal_care_walkability_score',
+            'administrative_offices_walkability_score', 'education_walkability_score', 'food_walkability_score',
+            'general_establishments_walkability_score', 'healthcare_industries_walkability_score', 'service_providers_walkability_score',
+            'recreational_walkability_score', 'living_facilities_walkability_score', 'religion_walkability_score',
+            'financial_walkability_score', 'specialized_stores_walkability_score', 'transportation_walkability_score'
+        ]
+        
+        # Fill NaN values with 0
+        final_df[columns_to_fill] = final_df[columns_to_fill].fillna(0)
+
+        vit_columns_to_fill = [
+            'vehicle_services', 'night_life', 'personal_care', 'administrative_offices',
+            'education', 'food', 'general_establishments', 'healthcare_industries',
+            'service_providers', 'recreational', 'living_facilities', 'religion',
+            'financial', 'specialized_stores', 'transportation'
+        ]
+
+        # List of columns to normalize
+        columns_to_normalize = [
+            'vehicle_services_nearest_distance', 'vehicle_services_avg_distance',
+            'night_life_nearest_distance', 'night_life_avg_distance',
+            'personal_care_nearest_distance', 'personal_care_avg_distance',
+            'administrative_offices_nearest_distance', 'administrative_offices_avg_distance',
+            'education_nearest_distance', 'education_avg_distance',
+            'food_nearest_distance', 'food_avg_distance',
+            'general_establishments_nearest_distance', 'general_establishments_avg_distance',
+            'healthcare_industries_nearest_distance', 'healthcare_industries_avg_distance',
+            'service_providers_nearest_distance', 'service_providers_avg_distance',
+            'recreational_nearest_distance', 'recreational_avg_distance',
+            'living_facilities_nearest_distance', 'living_facilities_avg_distance',
+            'religion_nearest_distance', 'religion_avg_distance',
+            'financial_nearest_distance', 'financial_avg_distance',
+            'specialized_stores_nearest_distance', 'specialized_stores_avg_distance',
+            'transportation_nearest_distance', 'transportation_avg_distance',
+            'min_distance_to_fault_meters'
+        ]
+
+        # Loop through each column and fill missing values with the mode of that column
+        for column in vit_columns_to_fill:
+            mode_value = 0  # Get the first mode value
+            final_df[column].fillna(mode_value, inplace=True)
+
+        final_df[columns_to_normalize] = final_df[columns_to_normalize].fillna(999999)
+        
         for column in final_df.columns:
             print(f"Column: {column}, Value: {final_df[column].values[0]}")
 
+        
         try:
             # Verify if the DataFrame is in the expected format
             # Get expected features from the model
