@@ -23,12 +23,12 @@ CORS(app)
 
 # Load the model
 model = xgb.XGBRegressor()
-model.load_model('xgb_model_gavin_best_96.json')
+model.load_model('xgb_model_gavin_final.json')
 
 # Load the scaler
-amenity_scaler = joblib.load('amenity_robust_scaler.pkl')
+amenity_scaler = joblib.load('amenity_robust_scaler_final.pkl')
 
-flood_scaler = joblib.load('flood_robust_scaler.pkl')
+flood_scaler = joblib.load('flood_robust_scaler_final.pkl')
 
 @app.route('/')
 def home():
@@ -177,8 +177,6 @@ def predict_xgb_endpoint():
             "operation_city_1_0": False,
             "operation_city_1_1": False,
             "ModelScores": 0,
-            "sqm_upper": floor_area_str,
-            "sqm_lower": floor_area_str,
             "min_distance_to_fault_meters": 0,
             "flood_threat_level_5_yr": 0,
             "flood_threat_level_25_yr": 0
@@ -204,7 +202,8 @@ def predict_xgb_endpoint():
             "open fireplace", "helipad", "golf area", "storage room", "terrace", "driver's room",
             "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace",
             "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
-            "air conditioning", "balcony", 'dryer', 'dryer.1', 'duct', 'duct.1', 'fibre', "living room"
+            "air conditioning", "balcony",  "living room", "volleyball court" 
+            #, "dryer", "dryer.1", "duct", "duct.1", "fibre"
         ]
 
         # Add amenities to df_data with initial value of 0
@@ -218,8 +217,10 @@ def predict_xgb_endpoint():
 
         if client_data["propertyType"] == 'apartment':
             df_data['type_encoded'] = 0
+            df_data['land size'] = df_data['floor area'] / df_data["total floors"]
         elif client_data['propertyType'] == 'condominium':
             df_data['type_encoded'] = 1
+            df_data['land size'] = df_data['floor area'] / df_data["total floors"]
         elif client_data['propertyType'] == 'house':
             df_data['type_encoded'] = 2
         elif client_data['propertyType'] == 'land':
@@ -392,13 +393,12 @@ def predict_xgb_endpoint():
             "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace",
             "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
             "air conditioning", "balcony", 'bedrooms', 'bathrooms', 'land size', 
-            'floor area', 'build (year)', 'total floors', 'car spaces', 'rooms (total)', 'dryer', 'dryer.1', 'duct', 'duct.1', 'fibre', "living room"]
+            'floor area', 'build (year)', 'total floors', 'car spaces', 'rooms (total)', "volleyball court", "living room"
+            #, 'dryer', 'dryer.1', 'duct', 'duct.1', 'fibre'
+        ]
         
-        columns_to_int = ["sqm_upper", "sqm_lower"]
         # Convert specified columns to float
         final_df[columns_to_float] = final_df[columns_to_float].astype(float)
-
-        final_df[columns_to_int] = final_df[columns_to_int].astype(int)
 
         #print("Number of columns:", len(final_df.columns))
 
@@ -418,7 +418,7 @@ def predict_xgb_endpoint():
                           'drying area', 'floorboards', 'split-system heating', 'garage', 'remote garage', 'sports facilities', 'powder room', 
                           'maids room', 'library', 'spa', 'clinic', 'open car spaces', 'intercom', 'ensuite', 'pond', 'amphitheater', 'gas heating', 
                           'hydronic heating', 'indoor tree house', 'open fireplace', 'helipad', 'golf area', 'bathrooms', 'land size', 'storage room', 
-                          'terrace', "driver's room", 'attic', 'basement', 'lanai', 'ducted cooling', 'ducted vacuum system', 'fireplace', 'ModelScores', 
+                          'terrace', "driver's room", 'attic', 'basement', 'lanai', 'ducted cooling', 'ducted vacuum system', 'fireplace', 'volleyball court', 'ModelScores', 
                           'vehicle_services_nearest_distance', 'vehicle_services_walkability_score', 'vehicle_services_avg_distance', 'night_life_nearest_distance', 
                           'night_life_walkability_score', 'night_life_avg_distance', 'personal_care_nearest_distance', 'personal_care_walkability_score', 
                           'personal_care_avg_distance', 'administrative_offices_nearest_distance', 'administrative_offices_walkability_score', 
@@ -433,7 +433,7 @@ def predict_xgb_endpoint():
                           'transportation_nearest_distance', 'transportation_walkability_score', 'transportation_avg_distance', 'flood_threat_level_5_yr', 
                           'flood_threat_level_25_yr', 'min_distance_to_fault_meters', 'vehicle_services', 'night_life', 'personal_care', 'administrative_offices', 
                           'education', 'food', 'general_establishments', 'healthcare_industries', 'service_providers', 'recreational', 'living_facilities', 
-                          'religion', 'financial', 'specialized_stores', 'transportation', 'sqm_lower', 'sqm_upper', 'classification_Brand New', 'classification_Resale', 
+                          'religion', 'financial', 'specialized_stores', 'transportation', 'classification_Brand New', 'classification_Resale', 
                           'fully furnished_No', 'fully furnished_Semi', 'fully furnished_Yes', 
                           'type_encoded', 'operation_city_0_0', 'operation_city_0_1', 'operation_city_1_0', 'operation_city_1_1']
 
