@@ -305,7 +305,10 @@ def predict_xgb_endpoint():
 
         score = predict_snn(client_data['lat'], client_data['lng'])
 
+        print(score)
         df_data["ModelScores"] = score
+
+        print(df_data["ModelScores"])
 
         main_df = pd.DataFrame([df_data])  
 
@@ -398,7 +401,6 @@ def predict_xgb_endpoint():
             "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
             "air conditioning", "balcony", 'bedrooms', 'bathrooms', 'land size', 
             'floor area', 'build (year)', 'total floors', 'car spaces', 'rooms (total)', "volleyball court", "living room"
-            #, 'dryer', 'dryer.1', 'duct', 'duct.1', 'fibre'
         ]
         
         # Convert specified columns to float
@@ -462,7 +464,7 @@ def predict_xgb_endpoint():
             'transportation_nearest_distance', 'transportation_walkability_score', 'transportation_avg_distance', 
             'vehicle_services', 'night_life', 'personal_care', 'administrative_offices', 'education', 
             'food', 'general_establishments', 'healthcare_industries', 'service_providers', 'recreational', 
-            'living_facilities', 'religion', 'financial', 'specialized_stores', 'transportation'
+            'living_facilities', 'religion', 'financial', 'specialized_stores', 'transportation', 'ModelScores'
         ]
 
         # Convert specified columns to float
