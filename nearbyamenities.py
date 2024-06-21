@@ -134,57 +134,9 @@ def compute_nearby_amenities(lat, lng, city):
         listings_gdf_projected[column_name] = None
     #print("category")
 
-    #print("initiate")
-    # Iterate over each listing
-    # listing_shortest_distances = {category: float('inf') for category in category_mapping}
-    # listing_distance_sum = {category: 0 for category in category_mapping}
-    # listing_num = {category: 0 for category in category_mapping}
-        
-    # #print("HLEPP")
-    # for amenity_idx, amenity_row in amenities_gdf_projected.iterrows():
-    #     # print("LISTING",listing.geometry)
-    #     #print("AMENITY",amenity_row.geometry)
-    #     #print(amenity_row.amenity)
-        
-    #     # amen_distance = get_route_coordinates((listing.geometry.y,listing.geometry.x),(amenity_row.geometry.y,amenity_row.geometry.x))
-    #     # print(amen_distance)   
-
-    #     distance = point.distance(amenity_row.geometry)
-        
-    #     #distance = geodesic((gdf_point[0].geometry.y, gdf_point[0].geometry.x), (amenity_row.geometry.y, amenity_row.geometry.x)).meters
-    #     #print("Distance using geodesic:", distance)
-        
-
-    #     # Check if the amenity falls under any category
-    #     for category, details in category_mapping.items():
-            
-    #         column_name1 = category + "_nearest_distance"
-    #         column_name2 = category + "_walkability_score"
-    #         column_name3 = category + "_avg_distance"
-    #         column_name = category
-
-    #         if amenity_row.amenity in details['amenities']:
-    #             if (distance <= distance_threshold):
-                    
-    #                 listing_distance_sum[category] += distance
-    #                 listing_num[category] += 1
-    #                 amenities_data.at[0, column_name3] = listing_distance_sum[category] / listing_num[category]
-    #                 amenities_data.at[0, column_name] = listing_num[category]
-                    
-    #                 # Update shortest distance if the current distance is shorter
-    #                 if (listing_shortest_distances[category] is None or distance < listing_shortest_distances[category]):
-    #                     listing_shortest_distances[category] = distance
-    #                     amenities_data.at[0, column_name1] = distance
-    #                     amenities_data.at[0, column_name2] = walkability_score(distance)
-                                                            
-    #             break  # No need to continue checking other categories for this amenity
-
-    # #for category, distance in amenities_data.items():
-    #     #print(f"Shortest distance to {category}: {distance}")
-
     # Iterate over each listing
     for idx, listing in listings_gdf_projected.iterrows():
-        listing_shortest_distances = {category: float('inf') for category in category_mapping}
+        listing_shortest_distances = {category: float("999999")  for category in category_mapping}
         listing_distance_sum = {category: 0 for category in category_mapping}
         listing_num = {category: 0 for category in category_mapping}
         

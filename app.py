@@ -510,7 +510,7 @@ def predict_xgb_endpoint():
             mode_value = 0  # Get the first mode value
             final_df[column].fillna(mode_value, inplace=True)
 
-        final_df[columns_to_normalize] = final_df[columns_to_normalize].fillna(999999)
+        #final_df[columns_to_normalize] = final_df[columns_to_normalize].fillna(999999)
         
         data_to_normalize = final_df[columns_to_normalize]
 
@@ -522,7 +522,7 @@ def predict_xgb_endpoint():
             'flood_threat_level_5_yr', 'flood_threat_level_25_yr'
         ]
         
-        final_df[flood_columns] = final_df[flood_columns].fillna(999999)
+        final_df[flood_columns] = final_df[flood_columns].fillna(0)
         
         data_to_normalize = final_df[flood_columns]
 
