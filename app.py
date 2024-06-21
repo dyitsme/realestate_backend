@@ -215,12 +215,16 @@ def predict_xgb_endpoint():
            df_data[amenity] = 1
            print(amenity)
 
+        # Convert 'floor area' and 'total floors' to numeric (float)
+        df_data['floor area'] = pd.to_numeric(df_data['floor area'], errors='coerce')
+        df_data['total floors'] = pd.to_numeric(df_data['total floors'], errors='coerce')
+
         if client_data["propertyType"] == 'apartment':
             df_data['type_encoded'] = 0
-            df_data['land size'] = df_data['floor area'] / df_data["total floors"]
+            df_data['land size'] = df_data['floor area'] / df_data['total floors']
         elif client_data['propertyType'] == 'condominium':
             df_data['type_encoded'] = 1
-            df_data['land size'] = df_data['floor area'] / df_data["total floors"]
+            df_data['land size'] = df_data['floor area'] / df_data['total floors']
         elif client_data['propertyType'] == 'house':
             df_data['type_encoded'] = 2
         elif client_data['propertyType'] == 'land':
