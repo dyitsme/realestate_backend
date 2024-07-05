@@ -30,6 +30,8 @@ amenity_scaler = joblib.load('amenity_robust_scaler_final.pkl')
 
 flood_scaler = joblib.load('flood_robust_scaler_final.pkl')
 
+score_scaler = joblib.load('score_robust_scaler_final.pkl')
+
 @app.route('/')
 def home():
     return "Model Inference API: /predict_xgb for XGBoost and /predict_snn for SNN"
@@ -39,19 +41,6 @@ def nearby_endpoint():
     nearby_amenities()
 
     return "DONE"
-
-# @app.route('/predict_xgb', methods=['POST'])
-# def predict_xgb_endpoint():
-#     try:
-#         # Get JSON data from request
-#         data = request.form.to_dict()
-#         # Perform prediction
-#         prediction = predict_xgb(data)
-#         # Return prediction as JSON
-#         return jsonify({'prediction': prediction})  # can change to just a single float value
-    
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 400
 
 # Function to calculate the distance from a point to the nearest fault line
 def min_distance_to_fault(point, fault_lines):
@@ -172,10 +161,9 @@ def predict_xgb_endpoint():
             "fully furnished_Semi": False,
             "fully furnished_Yes": False,
             "type_encoded": 0,
-            "operation_city_0_0": False,
-            "operation_city_0_1": False,
-            "operation_city_1_0": False,
-            "operation_city_1_1": False,
+            "operation_encoded": False,
+            "city_paranaque": False,
+            "city_pasig": False,
             "ModelScores": 0,
             "min_distance_to_fault_meters": 0,
             "flood_threat_level_5_yr": 0,
@@ -203,7 +191,6 @@ def predict_xgb_endpoint():
             "attic", "basement", "lanai", "ducted cooling", "ducted vacuum system", "fireplace",
             "broadband internet available", "built-in wardrobes", "baths", "fully fenced",
             "air conditioning", "balcony",  "living room", "volleyball court" 
-            #, "dryer", "dryer.1", "duct", "duct.1", "fibre"
         ]
 
         # Add amenities to df_data with initial value of 0
@@ -248,14 +235,17 @@ def predict_xgb_endpoint():
         else:
             print("INVALID")
 
-        if client_data['city'] == 'Pasig' and client_data['operation'] == 'buy':
-            df_data['operation_city_0_1'] = True
-        elif client_data['city'] == 'Pasig' and client_data['operation'] == 'rent':
-            df_data['operation_city_1_1'] = True
-        elif client_data['city'] == 'Parañaque' and client_data['operation'] == 'buy':
-            df_data['operation_city_0_0'] = True
-        elif client_data['city'] == 'Parañaque' and client_data['operation'] == 'rent':
-            df_data['operation_city_1_0'] = True
+        if client_data['operation'] == 'buy':
+            df_data['operation_encoded'] = False
+        elif client_data['operation'] == 'rent':
+            df_data['operation_encoded'] = True
+        else:
+            print("INVALID")
+
+        if client_data['city'] == 'Parañaque':
+            df_data['city_paranaque'] = True
+        elif client_data['city'] == 'Pasig':
+            df_data['city_pasig'] = True
         else:
             print("INVALID")
             
@@ -443,7 +433,37 @@ def predict_xgb_endpoint():
                           'fully furnished_No', 'fully furnished_Semi', 'fully furnished_Yes', 
                           'type_encoded', 'operation_city_0_0', 'operation_city_0_1', 'operation_city_1_0', 'operation_city_1_1']
 
-        final_df = final_df[expected_order]
+        new_expected_order = ['bedrooms', 'baths', 'floor area', 'broadband internet available', 'air conditioning', 'car spaces', 'total floors', 
+                              'built-in wardrobes', 'balcony', 'build (year)', 'fully fenced', 'rooms (total)', 'gym', 'wi-fi', 'swimming pool', 'pay tv access', 
+                              'basketball court', 'jogging path', 'alarm system', 'lounge', 'entertainment room', 'parks', 'cctv', 'basement parking', 'elevators', 
+                              'fire exits', 'function room', 'lobby', 'reception area', 'fire alarm', 'fire sprinkler system', '24-hour security', 'garden', 'secure parking',
+                              'bar', "maid's room", 'playground', 'gymnasium', 'utility room', 'billiards table', 'business center', 'club house', 'fitness center', 
+                              'game room', 'meeting rooms', 'multi-purpose hall', 'shower rooms', 'sky lounge', 'smoke detector', 'social hall', 'study room', 
+                              'function area', 'open space', 'gazebos', 'shops', 'study area', 'carport', 'clubhouse', 'deck', 'gazebo', 'landscaped garden', 
+                              'multi-purpose lawn', 'parking lot', 'theater', 'daycare center', 'sauna', 'laundry area', 'courtyard', 'badminton court', 
+                              'tennis court', 'jacuzzi', 'central air conditioning', 'health club', 'indoor spa', 'outdoor spa', 'pool bar', 'indoor pool', 
+                              'drying area', 'floorboards', 'split-system heating', 'garage', 'remote garage', 'sports facilities', 'powder room', 
+                              'maids room', 'library', 'spa', 'clinic', 'open car spaces', 'intercom', 'ensuite', 'pond', 'amphitheater', 'gas heating', 
+                              'hydronic heating', 'indoor tree house', 'open fireplace', 'helipad', 'golf area', 'bathrooms', 'land size', 'storage room', 
+                              'terrace', "driver's room", 'attic', 'basement', 'lanai', 'ducted cooling', 'ducted vacuum system', 'fireplace', 'volleyball court', 'ModelScores', 
+                              'vehicle_services_nearest_distance', 'vehicle_services_walkability_score', 'vehicle_services_avg_distance', 'night_life_nearest_distance', 
+                              'night_life_walkability_score', 'night_life_avg_distance', 'personal_care_nearest_distance', 'personal_care_walkability_score', 
+                              'personal_care_avg_distance', 'administrative_offices_nearest_distance', 'administrative_offices_walkability_score', 
+                              'administrative_offices_avg_distance', 'education_nearest_distance', 'education_walkability_score', 'education_avg_distance', 
+                              'food_nearest_distance', 'food_walkability_score', 'food_avg_distance', 'general_establishments_nearest_distance', 
+                              'general_establishments_walkability_score', 'general_establishments_avg_distance', 'healthcare_industries_nearest_distance', 
+                              'healthcare_industries_walkability_score', 'healthcare_industries_avg_distance', 'service_providers_nearest_distance', 
+                              'service_providers_walkability_score', 'service_providers_avg_distance', 'recreational_nearest_distance', 'recreational_walkability_score', 
+                              'recreational_avg_distance', 'living_facilities_nearest_distance', 'living_facilities_walkability_score', 'living_facilities_avg_distance', 
+                              'religion_nearest_distance', 'religion_walkability_score', 'religion_avg_distance', 'financial_nearest_distance', 'financial_walkability_score', 
+                              'financial_avg_distance', 'specialized_stores_nearest_distance', 'specialized_stores_walkability_score', 'specialized_stores_avg_distance', 
+                              'transportation_nearest_distance', 'transportation_walkability_score', 'transportation_avg_distance', 'flood_threat_level_5_yr', 
+                              'flood_threat_level_25_yr', 'min_distance_to_fault_meters', 'vehicle_services', 'night_life', 'personal_care', 'administrative_offices', 
+                              'education', 'food', 'general_establishments', 'healthcare_industries', 'service_providers', 'recreational', 'living_facilities', 
+                              'religion', 'financial', 'specialized_stores', 'transportation', 'classification_Brand New', 'classification_Resale', 
+                              'fully furnished_No', 'fully furnished_Semi', 'fully furnished_Yes', 'city_paranaque', 'city_pasig', 'type_encoded', 'operation_encoded']
+        
+        final_df = final_df[new_expected_order]
 
         # List of columns that need to be converted to float
         columns_to_convert = [
@@ -535,6 +555,12 @@ def predict_xgb_endpoint():
         normalized_data = flood_scaler.transform(data_to_normalize)
 
         final_df[flood_columns] = normalized_data
+
+        data_to_normalize = final_df[["ModelScores"]]
+
+        normalized_data = score_scaler.transform(data_to_normalize)
+
+        final_df['ModelScores'] = normalized_data
 
         for column in final_df.columns:
             print(f"Column: {column}, Value: {final_df[column].values[0]}")
