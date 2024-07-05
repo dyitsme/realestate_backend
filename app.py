@@ -640,7 +640,7 @@ def predict_xgb_endpoint():
             top_positive_features = shap_df_filtered.head(3).to_dict(orient='records')
             top_negative_features = shap_df_filtered.tail(3).to_dict(orient='records')
 
-            return jsonify({"prediction": float(prediction), "safetyScore": float(final_df['ModelScores'].values[0]), "featureImportance": importance_list, "top_positive": top_positive_features, "top_negative": top_negative_features})  # can change to just a single float value
+            return jsonify({"prediction": float(prediction), "safetyScore": float(score), "featureImportance": importance_list, "top_positive": top_positive_features, "top_negative": top_negative_features})  # can change to just a single float value
         
         except Exception as e:
             return str(e)
