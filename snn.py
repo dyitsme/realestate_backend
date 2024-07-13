@@ -86,9 +86,8 @@ def get_images_in_range(lat, long):
         coords = tuple(map(float, row['coordinates'].split(',')))
         coords = (coords[1],coords[0])
         
-        # distance = geodesic((lat, long), coords).meters
-        distance = get_route_distance((lat,long), coords)
-        print("NEWDIST",distance)
+        distance = geodesic((lat, long), coords).meters
+        # print("NEWDIST",distance)
         
         counter+=1
         if distance <= 1000:
@@ -251,8 +250,7 @@ def gather_distanced_images(lat, long):
                             #print("TEST5 - Coordinates found in JSON:", jsonCoord)
                             
                             distance = geodesic(coordinates, jsonCoord).meters
-                            distance = get_route_distance(coordinates, jsonCoord)
-                            print("Distance calculated:", distance)
+                            # print("Distance calculated:", distance)
 
                             if distance < 1000:
                                 if is_over_50m_from_all_images(coordinates): 
@@ -289,46 +287,10 @@ def is_over_50m_from_all_images(coordinates):
             with open(os.path.join(output_folder, filename), 'r') as f:
                 json_data = json.load(f)
             file_coordinates = json_data.get('coordinates')  # Assuming the key is 'coordinates'
-            # distance = geodesic(coordinates, file_coordinates).meters
-            distance = get_route_distance(coordinates, file_coordinates)
+            distance = geodesic(coordinates, file_coordinates).meters
             if distance < 50:
                 return False
     return True
-
-
-def get_route_distance(source, destination, profile='foot', max_retries=5, retry_delay=5):
-    retries = 0
-    while retries < max_retries:
-        try:
-            # Define the OSRM API URL
-            osrm_url = f'http://router.project-osrm.org/route/v1/{profile}/{source[1]},{source[0]};{destination[1]},{destination[0]}?overview=false'  # overview=false for no geometry
-
-            # Make a GET request to the OSRM API
-            response = requests.get(osrm_url)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                data = response.json()
-                # Check if a route was found
-                if 'routes' in data and len(data['routes']) > 0:
-                    distance = data['routes'][0]['distance']  # Get distance of the route
-                    return distance
-                else:
-                    print("No route found")
-                    return None
-            else:
-                print("Error:", response.status_code)
-                return None
-        except requests.exceptions.RequestException as e:
-            print("Request failed:", e)
-            retries += 1
-            if retries < max_retries:
-                print(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-    print("Maximum retries reached. Failed to get route distance.")
-    return None
-
-
 
 if __name__ == '__main__':
     snn.run(debug=True)
